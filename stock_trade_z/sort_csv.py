@@ -11,13 +11,13 @@ from stock_trade_z.lib.load_stocklist import (
 
 def main():
     warnings.warn(
-        "⚠️  sort_csv.py is deprecated and will be removed in a future version. "
+        " sort_csv.py is deprecated and will be removed in a future version. "
         "This functionality is now integrated into other tools.",
         DeprecationWarning,
         stacklevel=2,
     )
     print("=" * 60)
-    print("⚠️  DEPRECATED: This script is obsolete")
+    print(" DEPRECATED: This script is obsolete")
     print("=" * 60)
     print()
 

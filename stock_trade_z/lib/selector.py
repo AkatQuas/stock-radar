@@ -739,7 +739,7 @@ class MA60CrossVolumeWaveSelector:
         if t_pos is None:
             return False
 
-        # === [T, today] 内以 High 最大值的交易日为 Tmax ===
+        # ===[T, today] 内以 High 最大值的交易日为 Tmax ===
         seg_T_to_today = hist.iloc[t_pos:]
         if seg_T_to_today.empty:
             return False

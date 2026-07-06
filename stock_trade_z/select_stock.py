@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from stock_trade_z.lib.data_utils import load_data_folder
@@ -30,19 +29,19 @@ def main():
     data_dir = Path(args.data_dir)
     if not data_dir.exists():
         logger.error("数据目录 %s 不存在", data_dir)
-        sys.exit(1)
+        return
 
     try:
         data, trade_date = load_data_folder(data_dir, date=args.date)
     except Exception as e:
-        logger.error("加载行情失败: %s", e)
-        sys.exit(1)
+        logger.error("加载行情失败，不再继续: %s", e)
+        return
 
     selector_dict = load_selectors()
     stocklist = load_total_stocklist()
 
     logger.info(
-        "🤖 开始本轮选股 🚀 🚀, 交易日: %s %s 。 \n\n",
+        "开始本轮选股, 交易日: %s %s 。 \n\n",
         trade_date.date(),
         trade_date.day_name(),
     )
@@ -52,7 +51,7 @@ def main():
         picks = selector.select(trade_date, data)
 
         if len(picks) > 0:
-            logger.info("============ 🎉 🎉 [%s] 选股结果 (%d) ==========", alias, len(picks))
+            logger.info("===[%s] 选股结果 (%d)===", alias, len(picks))
             filtered_list = [s for s in stocklist if s["symbol"] in picks]
             single_str_list = [
                 f"{s['symbol']}, {s['name'].ljust(5)}({s['xueqiu_url']})" for s in filtered_list
@@ -75,7 +74,7 @@ def main():
                 }
             )
         else:
-            logger.info("============ ❌ ❌ [%s] 无结果 =======\n\n", alias)
+            logger.info("===[%s] 无结果===\n\n", alias)
 
     llm_section = None
     if args.llm_analyze and all_results:
@@ -91,11 +90,11 @@ def main():
     if args.send_lark:
         title = f"{trade_date.date()}[{trade_date.day_name()}]选股结果"
         markdown = build_select_report_md(all_results, llm_section)
-        summary = f"📈 选股结果 — {trade_date.date()} {trade_date.day_name()}"
+        summary = f"选股结果 — {trade_date.date()} {trade_date.day_name()}"
         if send_report_as_doc(title=title, markdown=markdown, summary=summary):
-            logger.info("✅ 已发送选股报告文档链接到 Lark")
+            logger.info("已发送选股报告文档链接到 Lark")
         else:
-            logger.error("❌ 发送 Lark 通知失败")
+            logger.error("发送 Lark 通知失败")
 
 
 if __name__ == "__main__":

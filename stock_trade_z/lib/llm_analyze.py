@@ -44,11 +44,11 @@ def analyze_picks(
 直接输出可粘贴进 Lark 文档的 Markdown 正文（不要代码块、不要 JSON、不要前言后记），格式模版为： `[code name](xueqiu url) [verdict]: reason` 。若干示例：
 
 ### 排序推荐
-- ✅ [600000 浦发银行](https://xueqiu.com/S/SH600000) [keep] 连板强势，封板早 — 风险: 高位换手
-- ⚠️ [000001 平安银行](https://xueqiu.com/S/SZ000001) [flag] 量能尚可但贴近涨停 — 风险: 分歧加大
+- [600000 浦发银行](https://xueqiu.com/S/SH600000) [keep] 连板强势，封板早 — 风险: 高位换手
+- [000001 平安银行](https://xueqiu.com/S/SZ000001) [flag] 量能尚可但贴近涨停 — 风险: 分歧加大
 
 ### 建议剔除
-- ❌ [000002 万科A](https://xueqiu.com/S/SZ000002) [veto] 换手过高且趋势走弱
+- [000002 万科A](https://xueqiu.com/S/SZ000002) [veto] 换手过高且趋势走弱
 
 候选数据：
 {picks_json}"""

@@ -39,7 +39,7 @@ def add_stock_to_good(
     matched = find_stock_by_symbol(total_df, symbol)
 
     if matched.empty:
-        print(f"❌ 未找到股票代码: {symbol}")
+        print(f"未找到股票代码: {symbol}")
         return good_df, False
 
     # 检查是否已存在
@@ -50,7 +50,7 @@ def add_stock_to_good(
     if symbol_padded in good_df_copy["symbol"].values:
         stock_name = matched.iloc[0]["name"]
         stock_url = matched.iloc[0]["xueqiu_url"]
-        print(f"⚠️  股票 {symbol_padded} ({stock_name} {stock_url}) 已存在于列表中")
+        print(f" 股票 {symbol_padded} ({stock_name} {stock_url}) 已存在于列表中")
         return good_df, False
 
     # 合并数据
@@ -58,7 +58,7 @@ def add_stock_to_good(
 
     stock_name = matched.iloc[0]["name"]
     stock_url = matched.iloc[0]["xueqiu_url"]
-    print(f"✅ 成功添加: {symbol_padded} - {stock_name} ({stock_url})")
+    print(f"成功添加: {symbol_padded} - {stock_name} ({stock_url})")
 
     return combined_df, True
 
@@ -83,7 +83,7 @@ def remove_stock_from_good(good_df: pd.DataFrame, symbol: str) -> tuple[pd.DataF
     matched_indices = good_df_copy[good_df_copy["symbol"] == symbol_padded].index
 
     if len(matched_indices) == 0:
-        print(f"❌ 股票 {symbol_padded} 不在列表中")
+        print(f"股票 {symbol_padded} 不在列表中")
         return good_df, False
 
     # 获取股票名称（用于显示）
@@ -104,7 +104,7 @@ def interactive_mode(
 ):
     """交互式模式，持续接受用户输入。"""
     print("=" * 60)
-    print("📈 股票管理工具 - 交互模式")
+    print("股票管理工具 - 交互模式")
     print("-" * 60)
     print("输入股票代码添加，前缀 '-' 删除（如: -600000）")
     print("按 Ctrl+C 或输入 'q/quit/exit' 退出")
@@ -121,7 +121,7 @@ def interactive_mode(
 
                 # 退出命令
                 if user_input.lower() in ["q", "quit", "exit"]:
-                    print("\n👋 再见！")
+                    print("\n再见！")
                     break
 
                 # 验证输入
@@ -134,11 +134,11 @@ def interactive_mode(
 
                 # 验证代码格式
                 if not code.isdigit():
-                    print("❌ 请输入纯数字代码")
+                    print("请输入纯数字代码")
                     continue
 
                 if len(code) > 6:
-                    print("❌ 代码长度不能超过6位")
+                    print("代码长度不能超过6位")
                     continue
 
                 # 执行添加或删除
@@ -153,14 +153,14 @@ def interactive_mode(
                 print()
 
             except KeyboardInterrupt:
-                print("\n\n👋 再见！")
+                print("\n\n再见！")
                 break
             except Exception as e:
-                print(f"❌ 错误: {e}")
+                print(f"错误: {e}")
                 print()
 
     except KeyboardInterrupt:
-        print("\n\n👋 再见！")
+        print("\n\n再见！")
 
     total_changes = added_count + removed_count
     return good_df, total_changes

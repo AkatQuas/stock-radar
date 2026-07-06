@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import sys
 from pathlib import Path
 
 from stock_trade_z.lib.fetch_data import fetch_batch_data
@@ -25,14 +24,14 @@ def main() -> None:
     args = parser.parse_args()
 
     if not args.trend_dir.exists():
-        logger.error("trend-dir 不存在: %s", args.trend_dir)
-        sys.exit(1)
+        logger.warning("trend-dir 不存在: %s", args.trend_dir)
+        return
 
     try:
         symbols = pool_symbols_from_dir(args.trend_dir, args.date)
     except FileNotFoundError as e:
-        logger.error("%s", e)
-        sys.exit(1)
+        logger.error("从目录获取股池失败 %s", e)
+        return
 
     if not symbols:
         logger.warning("股池为空，跳过 K 线抓取")

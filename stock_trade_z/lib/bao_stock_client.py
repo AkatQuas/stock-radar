@@ -52,7 +52,7 @@ class BSClient:
         """上下文管理器出口"""
         self.logout()
 
-    # ============ 数据获取方法 ============
+    # ===数据获取方法 ===
 
     def get_kline_baostock(
         self, code: str, start: str, end: str | None = None

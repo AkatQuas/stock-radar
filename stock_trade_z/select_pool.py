@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 from stock_trade_z.lib.data_utils import load_data_folder
@@ -46,22 +45,23 @@ def main() -> None:
 
     if not args.data_dir.exists():
         logger.error("data-dir 不存在: %s", args.data_dir)
-        sys.exit(1)
+        return
+
     if not args.trend_dir.exists():
         logger.error("trend-dir 不存在: %s", args.trend_dir)
-        sys.exit(1)
+        return
 
     try:
         data, trade_date = load_data_folder(args.data_dir, date=args.date)
     except Exception as e:
         logger.error("加载股池 K 线失败: %s", e)
-        sys.exit(1)
+        return
 
     try:
         trend_ctx = load_trend_context(args.trend_dir, args.date or trade_date.strftime("%Y-%m-%d"))
     except Exception as e:
         logger.error("加载股池快照失败: %s", e)
-        sys.exit(1)
+        return
 
     pools = trend_ctx.pools
     selector_dict = load_pool_selectors()
@@ -69,7 +69,7 @@ def main() -> None:
     stock_by_sym = {s["symbol"]: s for s in stocklist}
 
     logger.info(
-        "🤖 股池选股开始 | %s %s | qsgc=%d ztgc=%d\n",
+        "股池选股开始 | %s %s | qsgc=%d ztgc=%d\n",
         trade_date.date(),
         trade_date.day_name(),
         len(pools.get("qsgc", [])),
@@ -80,10 +80,10 @@ def main() -> None:
     for alias, selector in selector_dict.items():
         picks = selector.select(trade_date, data, pools)
         if not picks:
-            logger.info("============ ❌ [%s] 无结果 =======\n", alias)
+            logger.info("===[%s] 无结果===\n", alias)
             continue
 
-        logger.info("============ 🎉 [%s] 股池结果 (%d) ==========", alias, len(picks))
+        logger.info("===[%s] 股池结果 (%d)===", alias, len(picks))
         stocks = []
         for sym in picks:
             info = stock_by_sym.get(sym, {"symbol": sym, "name": sym, "xueqiu_url": ""})
@@ -119,11 +119,11 @@ def main() -> None:
     if args.send_lark:
         title = f"{trade_date.date()}[{trade_date.day_name()}]股池选股"
         markdown = build_pool_select_report_md(all_results, llm_section)
-        summary = f"📈 强势股/涨停选股 — {trade_date.date()} {trade_date.day_name()}"
+        summary = f"强势股/涨停选股 — {trade_date.date()} {trade_date.day_name()}"
         if send_report_as_doc(title=title, markdown=markdown, summary=summary):
-            logger.info("✅ 已发送股池选股报告文档链接到 Lark")
+            logger.info("已发送股池选股报告文档链接到 Lark")
         else:
-            logger.error("❌ 发送 Lark 失败")
+            logger.error("发送 Lark 失败")
 
 
 if __name__ == "__main__":

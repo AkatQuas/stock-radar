@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import sys
 from pathlib import Path
 
 from stock_trade_z.lib.fetch_trend import POOL_NAMES, _normalize_trade_date, fetch_pools
@@ -37,7 +36,7 @@ def main() -> None:
 
     if saved == 0:
         logger.error("未保存任何股池数据")
-        sys.exit(1)
+        return
 
     logger.info("股池抓取完成: %s", out_dir.resolve())
 

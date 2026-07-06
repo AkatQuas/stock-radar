@@ -53,7 +53,7 @@ def main():
             aggregated.setdefault(code, []).append(name)
 
     if aggregated:
-        header = f"=== Aggregated risk summary ({len(aggregated)} symbols) ==="
+        header = f"===Aggregated risk summary ({len(aggregated)} symbols) ==="
         out_lines: list[str] = [header]
         for code, reasons in sorted(aggregated.items(), key=lambda kv: len(kv[1]), reverse=True):
             info = next((s for s in stocklist if s["symbol"] == code), None)
@@ -74,11 +74,11 @@ def main():
     if args.send_lark:
         title = f"{trade_date.date()}[{trade_date.day_name()}]风险检测"
         markdown = build_risk_report_md(aggregated, stocklist)
-        summary = f"⚠️ 风险检测 — {trade_date.date()} {trade_date.day_name()}"
+        summary = f"风险检测 — {trade_date.date()} {trade_date.day_name()}"
         if send_report_as_doc(title=title, markdown=markdown, summary=summary):
-            logger.info("✅ 已发送风险检测报告文档链接到 Lark")
+            logger.info("已发送风险检测报告文档链接到 Lark")
         else:
-            logger.error("❌ 发送 Lark 通知失败")
+            logger.error("发送 Lark 通知失败")
 
     logger.info("Done. %s", get_today_name())
 

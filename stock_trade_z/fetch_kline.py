@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
-import sys
 import warnings
 from pathlib import Path
 
@@ -41,8 +40,8 @@ def main():
     stock_list = load_stock_from_file(args.stocklist, exclude_boards)
 
     if len(stock_list) == 0:
-        logger.error("stocklist 为空或被过滤后无代码，请检查。")
-        sys.exit(1)
+        logger.warning("stocklist 为空或被过滤后无代码，请检查。")
+        return
 
     start = dt.date.today().strftime("%Y%m%d") if str(args.start).lower() == "today" else args.start
     end = dt.date.today().strftime("%Y%m%d") if str(args.end).lower() == "today" else args.end
@@ -69,7 +68,8 @@ def main():
 
     logger.info("全部任务完成: 成功 %d, 失败 %d → %s", ok, fail, out_dir.resolve())
     if ok == 0:
-        sys.exit(1)
+        logger.warning("所有任务均失败，很遗憾。")
+        return
 
 
 if __name__ == "__main__":
