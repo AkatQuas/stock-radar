@@ -122,7 +122,7 @@
     },
     {
       "class": "B1Selector",
-      "module": "stock_trade_z.lib.pipeline_selectors",
+      "module": "stock_trade_z.strategy.pipeline",
       "alias": "B1战法",
       "params": {
         "j_threshold": 15,
@@ -138,7 +138,7 @@
     },
     {
       "class": "BrickChartSelector",
-      "module": "stock_trade_z.lib.pipeline_selectors",
+      "module": "stock_trade_z.strategy.pipeline",
       "alias": "砖型图战法",
       "params": {
         "n": 8,
@@ -169,7 +169,7 @@
     },
     {
       "class": "MomentumSelector",
-      "module": "stock_trade_z.lib.quant_selectors",
+      "module": "stock_trade_z.strategy.quant",
       "alias": "动量因子",
       "params": {
         "roc_window": 20,
@@ -180,7 +180,7 @@
     },
     {
       "class": "MACDGoldenCrossSelector",
-      "module": "stock_trade_z.lib.quant_selectors",
+      "module": "stock_trade_z.strategy.quant",
       "alias": "MACD金叉",
       "params": {
         "lookback_n": 5,
@@ -190,7 +190,7 @@
     },
     {
       "class": "BollingerMeanReversionSelector",
-      "module": "stock_trade_z.lib.quant_selectors",
+      "module": "stock_trade_z.strategy.quant",
       "alias": "布林均值回归",
       "params": {
         "bb_window": 20,
@@ -202,7 +202,7 @@
     },
     {
       "class": "DonchianBreakoutSelector",
-      "module": "stock_trade_z.lib.quant_selectors",
+      "module": "stock_trade_z.strategy.quant",
       "alias": "唐奇安突破",
       "params": {
         "channel_n": 20,
@@ -213,7 +213,7 @@
     },
     {
       "class": "DualMAGoldenCrossSelector",
-      "module": "stock_trade_z.lib.quant_selectors",
+      "module": "stock_trade_z.strategy.quant",
       "alias": "双均线金叉",
       "params": {
         "short_ma": 10,
@@ -224,13 +224,78 @@
     },
     {
       "class": "ChartScoreSelector",
-      "module": "stock_trade_z.lib.chart_score",
+      "module": "stock_trade_z.strategy.chart_score",
       "alias": "K线图形评分",
       "params": {
         "min_bars": 60,
         "lookback": 120,
         "swing_lookback": 40,
         "pass_threshold": 3.7
+      }
+    },
+    {
+      "class": "MaVolumeSelector",
+      "alias": "均线放量战法",
+      "params": {
+        "short_ma": 5,
+        "long_ma": 20,
+        "vol_multiple": 1.5
+      }
+    },
+    {
+      "class": "RpsBreakoutSelector",
+      "alias": "RPS动量突破",
+      "params": {
+        "rps_period": 120,
+        "rps_threshold": 90,
+        "breakout_ratio": 0.9
+      }
+    },
+    {
+      "class": "TurtleTradeSelector",
+      "alias": "海龟突破战法",
+      "params": {
+        "breakout_window": 20,
+        "min_amount": 100000000,
+        "require_bullish": true,
+        "require_higher_close": true
+      }
+    },
+    {
+      "class": "HighTightFlagSelector",
+      "alias": "高旗形整理",
+      "params": {
+        "momentum_window": 40,
+        "consolidation_window": 10,
+        "momentum_ratio": 1.6,
+        "consolidation_ratio": 1.15,
+        "high_level_ratio": 0.8,
+        "vol_shrink_ratio": 0.6
+      }
+    },
+    {
+      "class": "LimitUpShakeoutSelector",
+      "alias": "涨停洗盘战法",
+      "params": {
+        "limit_up_ratio": 1.095,
+        "vol_multiple": 2.0
+      }
+    },
+    {
+      "class": "UptrendLimitDownSelector",
+      "alias": "趋势跌停错杀",
+      "params": {
+        "short_ma": 20,
+        "long_ma": 60,
+        "limit_down_ratio": 0.905,
+        "vol_multiple": 2.0
+      }
+    },
+    {
+      "class": "PrivatePlacementSelector",
+      "alias": "定增公告监控",
+      "params": {
+        "lookback_days": 7
       }
     }
   ]

@@ -84,7 +84,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "stock_trade_z/try_play.py" = ["F401", "E402"]
-"stock_trade_z/lib/pipeline_selectors.py" = ["E701", "E702", "E741", "RET504", "SIM110", "SIM103"]
+"stock_trade_z/strategy/pipeline.py" = ["E701", "E702", "E741", "RET504", "SIM110", "SIM103"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["stock_trade_z"]

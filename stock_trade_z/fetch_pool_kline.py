@@ -4,10 +4,10 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from stock_trade_z.lib.fetch_data import fetch_batch_data
-from stock_trade_z.lib.logger import get_logger
-from stock_trade_z.lib.trend_context import pool_symbols_from_dir
-from stock_trade_z.lib.utils import ensure_folder
+from stock_trade_z.core.logger import get_logger
+from stock_trade_z.core.utils import ensure_folder
+from stock_trade_z.market.fetch_data import fetch_batch_data
+from stock_trade_z.market.trend_context import pool_symbols_from_dir
 
 logger = get_logger("fetch")
 

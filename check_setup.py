@@ -14,11 +14,11 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
 
-from stock_trade_z.lib.fetch_data import fetch_one_data  # noqa: E402
-from stock_trade_z.lib.fetch_trend import fetch_pool  # noqa: E402
-from stock_trade_z.lib.lark_notify import send_report_as_doc  # noqa: E402
-from stock_trade_z.lib.llm import api_key_configured, ping  # noqa: E402
-from stock_trade_z.lib.send_lark_message import lark_configured  # noqa: E402
+from stock_trade_z.llm.llm import api_key_configured, ping  # noqa: E402
+from stock_trade_z.market.fetch_data import fetch_one_data  # noqa: E402
+from stock_trade_z.market.fetch_trend import fetch_pool  # noqa: E402
+from stock_trade_z.notify.lark_notify import send_report_as_doc  # noqa: E402
+from stock_trade_z.notify.send_lark_message import lark_configured  # noqa: E402
 
 OK = "✅"
 FAIL = "❌"

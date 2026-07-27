@@ -20,3 +20,19 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: smoke-test
+        name: package smoke test
+        entry: uv run python scripts/smoke_test.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ruff-ci-parity
+        name: ruff check (CI parity)
+        entry: bash -c "uv run ruff check . && uv run ruff format --check ."
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

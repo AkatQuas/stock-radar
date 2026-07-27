@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from stock_trade_z.lib.fetch_data import _normalize_date, is_trade_date
-from stock_trade_z.lib.logger import get_logger
+from stock_trade_z.core.logger import get_logger
+from stock_trade_z.market.fetch_data import _normalize_date, is_trade_date
 
 logger = get_logger("fetch")
 

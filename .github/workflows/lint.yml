@@ -27,3 +27,6 @@ jobs:
 
       - name: Ruff format (check only)
         run: uv run ruff format --check .
+
+      - name: Package smoke test
+        run: uv run python scripts/smoke_test.py

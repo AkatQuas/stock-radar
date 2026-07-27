@@ -4,9 +4,9 @@ import argparse
 import datetime as dt
 from pathlib import Path
 
-from stock_trade_z.lib.fetch_trend import POOL_NAMES, _normalize_trade_date, fetch_pools
-from stock_trade_z.lib.logger import get_logger
-from stock_trade_z.lib.utils import ensure_folder
+from stock_trade_z.core.logger import get_logger
+from stock_trade_z.core.utils import ensure_folder
+from stock_trade_z.market.fetch_trend import POOL_NAMES, _normalize_trade_date, fetch_pools
 
 logger = get_logger("fetch")
 

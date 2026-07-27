@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 import tushare as ts
 
-from stock_trade_z.lib.bao_stock_client import BSClient
-from stock_trade_z.lib.compute import compute_cci14_cci84, compute_pit_and_trap
-from stock_trade_z.lib.load_stocklist import load_stock_from_file_in_df
-from stock_trade_z.lib.ts_pro_api import get_pro_api
+from stock_trade_z.core.compute import compute_cci14_cci84, compute_pit_and_trap
+from stock_trade_z.market.bao_stock_client import BSClient
+from stock_trade_z.market.load_stocklist import load_stock_from_file_in_df
+from stock_trade_z.market.ts_pro_api import get_pro_api
 
 if __name__ == "__main__":
     arr = np.array([[0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14]])

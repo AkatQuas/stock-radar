@@ -1,10 +1,10 @@
 import argparse
 from typing import Any
 
-from stock_trade_z.lib.fetch_data import fetch_one_data
-from stock_trade_z.lib.load_selector import load_selectors
-from stock_trade_z.lib.load_stocklist import StockCodeDict, load_total_stocklist
-from stock_trade_z.lib.logger import get_logger
+from stock_trade_z.core.logger import get_logger
+from stock_trade_z.market.fetch_data import fetch_one_data
+from stock_trade_z.market.load_stocklist import StockCodeDict, load_total_stocklist
+from stock_trade_z.strategy.loader import load_selectors
 
 logger = get_logger("check")
 
