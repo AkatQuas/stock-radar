@@ -40,21 +40,64 @@ def section(title: str) -> None:
     print(f"\n── {title} {'─' * (50 - len(title))}")
 
 
-section("环境变量 / GitHub Secrets")
-required = {
+def _mask_secret(value: str, *, visible: int = 10) -> str:
+    if len(value) <= visible:
+        return value
+    return f"{value[:visible]}…"
+
+
+def report_langfuse() -> None:
+    public = os.getenv("LANGFUSE_PUBLIC_KEY")
+    secret = os.getenv("LANGFUSE_SECRET_KEY")
+    base_url = os.getenv("LANGFUSE_BASE_URL")
+
+    if not any((public, secret, base_url)):
+        print("  ⚪  Langfuse 未配置（可选，LLM 可观测性）")
+        return
+
+    if public:
+        print(f"  ✅  LANGFUSE_PUBLIC_KEY  ({public})")
+    else:
+        print("  ⚪  LANGFUSE_PUBLIC_KEY  (未设置)")
+
+    if secret:
+        print(f"  ✅  LANGFUSE_SECRET_KEY  ({_mask_secret(secret)})")
+    else:
+        print("  ⚪  LANGFUSE_SECRET_KEY  (未设置)")
+
+    if base_url:
+        print(f"  ✅  LANGFUSE_BASE_URL  ({base_url})")
+    else:
+        print("  ⚪  LANGFUSE_BASE_URL  (未设置，使用 Langfuse SDK 默认)")
+
+    from stock_trade_z.llm.langfuse_tracing import is_enabled
+
+    if is_enabled():
+        print("  ✅  Langfuse 追踪已启用")
+    else:
+        print("  ⚠️  Langfuse 密钥不完整，追踪未启用（需同时设置 PUBLIC_KEY 与 SECRET_KEY）")
+
+
+section("GitHub Secrets")
+required_secrets = {
     "ZHITU_TOKEN": os.getenv("ZHITU_TOKEN"),
     "TUSHARE_TOKEN": os.getenv("TUSHARE_TOKEN"),
     "LARK_APP_ID": os.getenv("LARK_APP_ID"),
     "LARK_SECRET": os.getenv("LARK_SECRET"),
-    "LARK_FOLDER_TOKEN": os.getenv("LARK_FOLDER_TOKEN"),
     "ME_UNION_ID": os.getenv("ME_UNION_ID"),
+    "LARK_FOLDER_TOKEN": os.getenv("LARK_FOLDER_TOKEN"),
 }
-optional = {
+for name, value in required_secrets.items():
+    check(
+        name,
+        bool(value),
+        "已设置" if value else "未找到，请在 Settings → Secrets 中添加",
+    )
+
+optional_secrets = {
     "DEEPSEEK_API_KEY": os.getenv("DEEPSEEK_API_KEY"),
 }
-for name, value in required.items():
-    check(name, bool(value), "已设置" if value else "未找到")
-for name, value in optional.items():
+for name, value in optional_secrets.items():
     print(f"  {'✅' if value else '⚪'}  {name}  ({'已设置' if value else '可选，LLM 复盘用'})")
 
 section("本地 .env")
@@ -88,6 +131,9 @@ if api_key_configured():
 else:
     print("  ⚪  DEEPSEEK_API_KEY 未设置（可选，--llm-analyze 时使用）")
 
+section("Langfuse（可选）")
+report_langfuse()
+
 section("Tushare API（股票列表）")
 if os.getenv("TUSHARE_TOKEN"):
     pass
@@ -108,15 +154,20 @@ else:
     check("Tushare API 连接（跳过，TUSHARE_TOKEN 未设置）", False)
 
 section("Lark")
+all_ok = not errors
 if not lark_configured():
-    check("Lark 配置完整", False, "需设置 LARK_APP_ID、LARK_SECRET、ME_UNION_ID")
+    check(
+        "Lark 配置完整",
+        False,
+        "需设置 LARK_APP_ID、LARK_SECRET、ME_UNION_ID、LARK_FOLDER_TOKEN",
+    )
 else:
     check("Lark 配置完整", True)
-    if not errors:
+    if all_ok:
         try:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            now = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
             markdown = (
-                f"# Stock Trade Z 配置验证成功\n\n"
+                f"# Stock Trade Z — 配置验证成功\n\n"
                 f"验证时间：{now}\n\n"
                 f"- TickFlow K 线\n"
                 f"- 智图股池 (qsgc/ztgc)\n"
@@ -124,16 +175,15 @@ else:
                 f"- 飞书机器人 + 云文档\n"
             )
             ok_send = send_report_as_doc(
-                title=f"配置验证 {now[:10]}",
+                title="配置验证",
                 markdown=markdown,
-                summary="✅ Stock Trade Z — 配置验证成功",
-                receive_id=os.getenv("ME_UNION_ID"),
+                summary="Stock Trade Z — 配置验证成功",
             )
             check("测试 Lark 文档通知已发送", ok_send)
         except Exception as e:
             check("发送测试 Lark 消息", False, str(e))
     else:
-        print("  ⚠️  存在配置错误，跳过发送测试 Lark 消息")
+        print("    存在配置错误，跳过发送测试 Lark 消息")
 
 print("\n" + "═" * 54)
 if not errors:

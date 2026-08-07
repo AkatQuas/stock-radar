@@ -18,7 +18,12 @@ _client: lark.Client | None = None
 
 
 def lark_configured() -> bool:
-    return bool(os.getenv("LARK_APP_ID") and os.getenv("LARK_SECRET") and os.getenv("ME_UNION_ID"))
+    return bool(
+        os.getenv("LARK_APP_ID")
+        and os.getenv("LARK_SECRET")
+        and os.getenv("ME_UNION_ID")
+        and os.getenv("LARK_FOLDER_TOKEN")
+    )
 
 
 def get_client() -> lark.Client:
