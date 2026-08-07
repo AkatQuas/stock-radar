@@ -64,6 +64,35 @@ def ask(prompt, default=None, secret=False):
         print(f"  {red('请输入内容')}")
 
 
+def ask_optional(prompt, secret=False):
+    hint = f" [{dim('留空跳过')}]"
+    full_prompt = f"  {prompt}{hint}: "
+    return (getpass.getpass(full_prompt) if secret else input(full_prompt)).strip()
+
+
+def collect_langfuse_config() -> dict[str, str]:
+    section("Langfuse 追踪（可选）")
+    print(dim("  在 https://langfuse.com/cloud 创建项目并获取 API Keys"))
+    print(dim("  留空跳过；需同时填写 PUBLIC_KEY 和 SECRET_KEY 才会启用"))
+
+    public_key = ask_optional("LANGFUSE_PUBLIC_KEY")
+    secret_key = ask_optional("LANGFUSE_SECRET_KEY", secret=True) if public_key else ""
+    if not public_key and not secret_key:
+        return {}
+    if not (public_key and secret_key):
+        warn("Langfuse 需要同时设置 PUBLIC_KEY 和 SECRET_KEY，已跳过")
+        return {}
+
+    base_url = ask("LANGFUSE_BASE_URL", default="https://cloud.langfuse.com")
+    config = {
+        "LANGFUSE_PUBLIC_KEY": public_key,
+        "LANGFUSE_SECRET_KEY": secret_key,
+        "LANGFUSE_BASE_URL": base_url,
+    }
+    ok("Langfuse 追踪已配置")
+    return config
+
+
 def ask_choice(prompt, choices):
     print(f"\n  {prompt}")
     for i, (label, desc) in enumerate(choices, 1):
@@ -170,6 +199,8 @@ def main():
     lark_folder_token = ask("LARK_FOLDER_TOKEN")
     me_union_id = ask("ME_UNION_ID（接收人 union_id）")
 
+    langfuse_config = collect_langfuse_config()
+
     section("写入本地 .env")
     update_env_file(
         {
@@ -180,6 +211,7 @@ def main():
             "LARK_SECRET": lark_secret,
             "ME_UNION_ID": me_union_id,
             "LARK_FOLDER_TOKEN": lark_folder_token,
+            **langfuse_config,
         }
     )
     ok(f"已更新 {ENV_PATH.name}")
@@ -193,6 +225,7 @@ def main():
         "LARK_SECRET": lark_secret,
         "LARK_FOLDER_TOKEN": lark_folder_token,
         "ME_UNION_ID": me_union_id,
+        **langfuse_config,
     }
     all_ok = True
     for name, value in secrets.items():

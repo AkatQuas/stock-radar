@@ -21,6 +21,7 @@
 - [快速上手](#快速上手)
   - [环境与依赖](#环境与依赖)
   - [环境变量与飞书（推荐 setup 向导）](#环境变量与飞书推荐-setup-向导)
+  - [LLM 可观测性（Langfuse）](#llm-可观测性langfuse)
 - [核心功能](#核心功能)
   - [1. 获取股票列表](#1-获取股票列表)
   - [2. 下载历史 K 线（qfq，日线）](#2-下载历史-k-线qfq日线)
@@ -103,6 +104,9 @@ uv run pre-commit run --all-files  # 手动全量跑一遍
 | `LARK_FOLDER_TOKEN` | 云文档存放文件夹 token（见 [lark-doc.md](./lark-doc.md)）                     |
 | `ME_UNION_ID`       | 接收人的 `union_id`（需 `im:message` + 文档读写权限）                         |
 | `DEEPSEEK_API_KEY`  | 可选；`--llm-analyze` DeepSeek 排序复盘                                       |
+| `LANGFUSE_PUBLIC_KEY` | 可选；[Langfuse](https://langfuse.com) LLM 观测公钥（见下文）                 |
+| `LANGFUSE_SECRET_KEY` | 可选；Langfuse 私钥（与公钥成对配置才启用）                                   |
+| `LANGFUSE_BASE_URL`   | 可选；Langfuse 区域，如 `https://jp.cloud.langfuse.com`                       |
 
 #### 方式一：交互式配置向导（推荐）
 
@@ -151,6 +155,26 @@ export ME_UNION_ID=...
 # Windows (PowerShell)
 $env:TUSHARE_TOKEN = "你的token"
 ```
+
+### LLM 可观测性（Langfuse）
+
+启用 `--llm-analyze` 后，选股复盘会调用 DeepSeek 对候选标的排序并生成 Markdown 点评。这类 LLM 调用很难只靠日志排查问题 — **[Langfuse](https://langfuse.com) 提供了很好的可观测性**：在 Web 控制台里能看到完整 trace、每轮 generation、token 用量和费用，方便对比模型表现、定位「只输出 reasoning 没有正文」等异常。
+
+集成方式与 `ai-dispatch` 相同，**完全可选**：
+
+- 同时设置 `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` → 自动上报（标签 `stock-trade-z`）
+- 任一未设置 → 零开销跳过，不影响选股与飞书推送
+
+```bash
+# .env 或 GitHub Actions Secrets
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://jp.cloud.langfuse.com   # 按你的 Langfuse 区域填写
+```
+
+`uv run python setup.py` 会询问是否写入上述变量；也可参考 [`.env.example`](./.env.example)。每日 CI workflow 已透传这些 Secret 到 LLM 步骤。
+
+注册项目：[langfuse.com/cloud](https://langfuse.com/cloud) → **Settings → API Keys**。
 
 #### 带 Lark 推送的运行示例
 
@@ -563,7 +587,7 @@ uv run python stock_trade_z/update_to_goodlist.py \
 │
 ├── data/                             # K 线行情 CSV 输出目录
 ├── stocklist.good.csv                # 优选股票池（经过初步筛选）
-├── .env.example                      # 环境变量示例（Tushare + Lark + DeepSeek）
+├── .env.example                      # 环境变量示例（Tushare + Lark + DeepSeek + Langfuse）
 ├── pyproject.toml                    # 项目依赖与 CLI 入口
 ├── uv.lock                           # 锁定依赖版本
 └── log/                              # 运行日志
@@ -618,7 +642,7 @@ uv run stock-detect-risk --data-dir ./data
 
 1. 运行 `uv run python check_setup.py`，确认环境变量与 Lark 测试文档通知均成功。
 2. 确认应用已发布、已开通 `docx:document` / `docx:document:create` / 云文档权限相关 scope，机器人可发消息，且 `ME_UNION_ID` 为接收人 union_id（非 open_id）。
-3. GitHub Actions 需在仓库 Secrets 中配置 `TUSHARE_TOKEN`、`ZHITU_TOKEN`、`DEEPSEEK_API_KEY`（若启用 LLM）、`LARK_APP_ID`、`LARK_SECRET`、`LARK_FOLDER_TOKEN`、`ME_UNION_ID`（可用 `setup.py` 一次性写入）。
+3. GitHub Actions 需在仓库 Secrets 中配置 `TUSHARE_TOKEN`、`ZHITU_TOKEN`、`DEEPSEEK_API_KEY`（若启用 LLM）、`LARK_APP_ID`、`LARK_SECRET`、`LARK_FOLDER_TOKEN`、`ME_UNION_ID`（可用 `setup.py` 一次性写入）。若启用 LLM 复盘并需要 trace，可额外配置 `LANGFUSE_PUBLIC_KEY`、`LANGFUSE_SECRET_KEY`、`LANGFUSE_BASE_URL`（见 [LLM 可观测性](#llm-可观测性langfuse)）。
 
 **Q1：为什么抓取会“卡住很久”？**
 可能命中 Tushare 频控或网络封禁。脚本检测到典型关键字（如“访问频繁/429/403”）时，会进入**长冷却（默认 600s）** 再重试。

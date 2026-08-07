@@ -3,8 +3,15 @@
 import os
 from typing import Any
 
-from openai import OpenAI
 from openai.types.chat import ChatCompletionMessage
+
+from stock_trade_z.llm.langfuse_tracing import (
+    APP_TAG,
+    observe,
+    openai_client,
+    set_trace_input,
+    set_trace_metadata,
+)
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 API_KEY_ENV = "DEEPSEEK_API_KEY"
@@ -19,11 +26,11 @@ def api_key_configured() -> bool:
     return bool(os.getenv(API_KEY_ENV))
 
 
-def get_client() -> OpenAI:
+def get_client():
     api_key = os.getenv(API_KEY_ENV)
     if not api_key:
         raise RuntimeError(f"{API_KEY_ENV} is not set")
-    return OpenAI(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
+    return openai_client(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
 
 
 def _reasoning_content(message: ChatCompletionMessage) -> str | None:
@@ -79,12 +86,16 @@ def _should_continue(message: ChatCompletionMessage) -> bool:
     return _reasoning_content(message) is not None
 
 
+@observe(name="deepseek-complete")
 def complete(prompt: str, *, model: str, max_tokens: int) -> str:
     """Call DeepSeek chat completions, retrying up to MAX_COMPLETION_ROUNDS.
 
     Thinking-mode models may return ``reasoning_content`` without ``content`` on an
     intermediate round; we append that assistant turn and continue the dialog.
     """
+    set_trace_input([{"role": "user", "content": prompt}])
+    set_trace_metadata(model=model, max_tokens=max_tokens, langfuse_tags=[APP_TAG])
+
     messages: list[dict[str, Any] | ChatCompletionMessage] = [{"role": "user", "content": prompt}]
     client = get_client()
     last_message: ChatCompletionMessage | None = None
@@ -94,6 +105,8 @@ def complete(prompt: str, *, model: str, max_tokens: int) -> str:
             model=model,
             messages=messages,
             max_tokens=max_tokens,
+            name="deepseek-chat-completion",
+            metadata={"round": round_idx + 1},
         )
         message = response.choices[0].message
         last_message = message
@@ -114,12 +127,17 @@ def complete(prompt: str, *, model: str, max_tokens: int) -> str:
     return _extract_content(last_message)
 
 
+@observe(name="deepseek-ping", capture_output=False)
 def ping(*, model: str = DEFAULT_MODEL) -> None:
     """Lightweight connectivity check — only verifies the API accepts a request."""
+    set_trace_input([{"role": "user", "content": "ping"}])
+    set_trace_metadata(model=model, langfuse_tags=[APP_TAG])
+
     response = get_client().chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": "ping"}],
         max_tokens=16,
+        name="deepseek-ping",
     )
     if not response.choices:
         raise RuntimeError("DeepSeek returned no choices")

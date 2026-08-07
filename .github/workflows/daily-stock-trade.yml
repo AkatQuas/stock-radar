@@ -20,6 +20,9 @@ jobs:
       LARK_SECRET: ${{secrets.LARK_SECRET}}
       LARK_FOLDER_TOKEN: ${{ secrets.LARK_FOLDER_TOKEN }}
       ME_UNION_ID: ${{secrets.ME_UNION_ID}}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}
 
     steps:
       - name: Checkout repository

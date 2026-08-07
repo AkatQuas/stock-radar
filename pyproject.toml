@@ -25,6 +25,7 @@ dependencies = [
   "openai>=2.41.0",
   "PyYAML>=6.0",
   "numba>=0.60",
+  "langfuse>=3.0.0",
 ]
 
 [project.optional-dependencies]
