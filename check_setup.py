@@ -14,11 +14,11 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).parent
 load_dotenv(ROOT / ".env")
 
-from stock_trade_z.llm.llm import api_key_configured, ping  # noqa: E402
-from stock_trade_z.market.fetch_data import fetch_one_data  # noqa: E402
-from stock_trade_z.market.fetch_trend import fetch_pool  # noqa: E402
-from stock_trade_z.notify.lark_notify import send_report_as_doc  # noqa: E402
-from stock_trade_z.notify.send_lark_message import lark_configured  # noqa: E402
+from stock_radar.llm.llm import api_key_configured, ping  # noqa: E402
+from stock_radar.market.fetch_data import fetch_one_data  # noqa: E402
+from stock_radar.market.fetch_trend import fetch_pool  # noqa: E402
+from stock_radar.notify.lark_notify import send_report_as_doc  # noqa: E402
+from stock_radar.notify.send_lark_message import lark_configured  # noqa: E402
 
 OK = "✅"
 FAIL = "❌"
@@ -70,7 +70,7 @@ def report_langfuse() -> None:
     else:
         print("  ⚪  LANGFUSE_BASE_URL  (未设置，使用 Langfuse SDK 默认)")
 
-    from stock_trade_z.llm.langfuse_tracing import is_enabled
+    from stock_radar.llm.langfuse_tracing import is_enabled
 
     if is_enabled():
         print("  ✅  Langfuse 追踪已启用")
@@ -163,7 +163,7 @@ else:
         try:
             now = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
             markdown = (
-                f"# Stock Trade Z — 配置验证成功\n\n"
+                f"# Stock Radar — 配置验证成功\n\n"
                 f"验证时间：{now}\n\n"
                 f"- TickFlow K 线\n"
                 f"- 智图股池 (qsgc/ztgc)\n"
@@ -173,7 +173,7 @@ else:
             ok_send = send_report_as_doc(
                 title="配置验证",
                 markdown=markdown,
-                summary="Stock Trade Z — 配置验证成功",
+                summary="Stock Radar — 配置验证成功",
             )
             check("测试 Lark 文档通知已发送", ok_send)
         except Exception as e:

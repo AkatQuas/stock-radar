@@ -122,7 +122,7 @@
     },
     {
       "class": "B1Selector",
-      "module": "stock_trade_z.strategy.pipeline",
+      "module": "stock_radar.strategy.pipeline",
       "alias": "B1战法",
       "params": {
         "j_threshold": 15,
@@ -138,7 +138,7 @@
     },
     {
       "class": "BrickChartSelector",
-      "module": "stock_trade_z.strategy.pipeline",
+      "module": "stock_radar.strategy.pipeline",
       "alias": "砖型图战法",
       "params": {
         "n": 8,
@@ -169,7 +169,7 @@
     },
     {
       "class": "MomentumSelector",
-      "module": "stock_trade_z.strategy.quant",
+      "module": "stock_radar.strategy.quant",
       "alias": "动量因子",
       "params": {
         "roc_window": 20,
@@ -180,7 +180,7 @@
     },
     {
       "class": "MACDGoldenCrossSelector",
-      "module": "stock_trade_z.strategy.quant",
+      "module": "stock_radar.strategy.quant",
       "alias": "MACD金叉",
       "params": {
         "lookback_n": 5,
@@ -190,7 +190,7 @@
     },
     {
       "class": "BollingerMeanReversionSelector",
-      "module": "stock_trade_z.strategy.quant",
+      "module": "stock_radar.strategy.quant",
       "alias": "布林均值回归",
       "params": {
         "bb_window": 20,
@@ -202,7 +202,7 @@
     },
     {
       "class": "DonchianBreakoutSelector",
-      "module": "stock_trade_z.strategy.quant",
+      "module": "stock_radar.strategy.quant",
       "alias": "唐奇安突破",
       "params": {
         "channel_n": 20,
@@ -213,7 +213,7 @@
     },
     {
       "class": "DualMAGoldenCrossSelector",
-      "module": "stock_trade_z.strategy.quant",
+      "module": "stock_radar.strategy.quant",
       "alias": "双均线金叉",
       "params": {
         "short_ma": 10,
@@ -224,7 +224,7 @@
     },
     {
       "class": "ChartScoreSelector",
-      "module": "stock_trade_z.strategy.chart_score",
+      "module": "stock_radar.strategy.chart_score",
       "alias": "K线图形评分",
       "params": {
         "min_bars": 60,

@@ -6,9 +6,9 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from stock_trade_z.market.load_stocklist import load_total_stocklist
-from stock_trade_z.strategy import BBIKDJSelector, MomentumSelector, TurtleTradeSelector
-from stock_trade_z.strategy.loader import load_pool_selectors, load_risk_selectors, load_selectors
+from stock_radar.market.load_stocklist import load_total_stocklist
+from stock_radar.strategy import BBIKDJSelector, MomentumSelector, TurtleTradeSelector
+from stock_radar.strategy.loader import load_pool_selectors, load_risk_selectors, load_selectors
 
 
 def _sample_df(n: int = 120) -> pd.DataFrame:

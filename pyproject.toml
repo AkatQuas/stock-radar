@@ -3,13 +3,13 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "stock-trade-z"
-version = "0.2.0"
-description = "Stock trading selection and risk detection (Z-style strategies + mainstream quant factors)"
+name = "stock-radar"
+version = "0.3.0"
+description = "A-share stock screening & risk detection: 25 config-driven selectors, LLM review, daily CI reports"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "stock_trade_z contributors" }]
+authors = [{ name = "stock_radar contributors" }]
 dependencies = [
   "pandas>=2.2,<3",
   "requests>=2.31",
@@ -32,22 +32,22 @@ dependencies = [
 dev = ["ruff>=0.9", "pre-commit>=4.0"]
 
 [project.scripts]
-stock-fetch-list = "stock_trade_z.fetch_stocklist:main"
-stock-fetch-kline = "stock_trade_z.fetch_kline:main"
-stock-fetch-trend = "stock_trade_z.fetch_trend_pools:main"
-stock-fetch-pool-kline = "stock_trade_z.fetch_pool_kline:main"
-stock-is-trade-date = "stock_trade_z.is_trade_date:main"
-stock-select = "stock_trade_z.select_stock:main"
-stock-select-pool = "stock_trade_z.select_pool:main"
-stock-detect-risk = "stock_trade_z.detect_risk:main"
-stock-check = "stock_trade_z.check_code:main"
+stock-fetch-list = "stock_radar.fetch_stocklist:main"
+stock-fetch-kline = "stock_radar.fetch_kline:main"
+stock-fetch-trend = "stock_radar.fetch_trend_pools:main"
+stock-fetch-pool-kline = "stock_radar.fetch_pool_kline:main"
+stock-is-trade-date = "stock_radar.is_trade_date:main"
+stock-select = "stock_radar.select_stock:main"
+stock-select-pool = "stock_radar.select_pool:main"
+stock-detect-risk = "stock_radar.detect_risk:main"
+stock-check = "stock_radar.check_code:main"
 
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple/"
 default = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["stock_trade_z"]
+packages = ["stock_radar"]
 
 [dependency-groups]
 dev = ["ruff>=0.9", "pre-commit>=4.0"]
@@ -55,7 +55,7 @@ dev = ["ruff>=0.9", "pre-commit>=4.0"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-src = ["stock_trade_z"]
+src = ["stock_radar"]
 extend-exclude = [
   "data",
   "log",
@@ -84,11 +84,11 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"stock_trade_z/try_play.py" = ["F401", "E402"]
-"stock_trade_z/strategy/pipeline.py" = ["E701", "E702", "E741", "RET504", "SIM110", "SIM103"]
+"stock_radar/try_play.py" = ["F401", "E402"]
+"stock_radar/strategy/pipeline.py" = ["E701", "E702", "E741", "RET504", "SIM110", "SIM103"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["stock_trade_z"]
+known-first-party = ["stock_radar"]
 
 [tool.ruff.format]
 quote-style = "double"

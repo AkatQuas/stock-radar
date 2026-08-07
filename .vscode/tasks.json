@@ -8,7 +8,7 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "args": ["run", "python", "stock_trade_z/try_play.py"],
+      "args": ["run", "python", "stock_radar/try_play.py"],
       "presentation": {
         "reveal": "always"
       },
@@ -60,7 +60,7 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "args": ["run", "python", "stock_trade_z/fetch_stocklist_300_500.py"],
+      "args": ["run", "python", "stock_radar/fetch_stocklist_300_500.py"],
       "presentation": {
         "reveal": "always"
       },
@@ -122,7 +122,7 @@
       "args": [
         "run",
         "python",
-        "stock_trade_z/update_to_goodlist.py",
+        "stock_radar/update_to_goodlist.py",
         "--stocklist",
         "./stocklist.good.csv"
       ],
@@ -139,7 +139,7 @@
       "args": [
         "run",
         "python",
-        "stock_trade_z/sort_csv.py",
+        "stock_radar/sort_csv.py",
         "--stocklist",
         "./stocklist.good.csv",
         "--replace"

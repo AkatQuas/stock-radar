@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stock Trade Z — 交互式配置向导
+Stock Radar — 交互式配置向导
 运行方式：uv run python setup.py
 完成后写入本地 .env，并将 GitHub Secrets 同步到远程仓库。
 """
@@ -141,7 +141,7 @@ def update_env_file(updates: dict[str, str]) -> None:
 
 def main():
     print()
-    print(bold("  🚀  Stock Trade Z 配置向导"))
+    print(bold("  🚀  Stock Radar 配置向导"))
     print(dim("  ─────────────────────────────────────────────"))
     print(dim("  回答以下问题，向导将写入 .env 并同步 GitHub Secrets。"))
     print(dim("  密码输入时不显示字符，直接回车接受 [默认值]。"))
@@ -149,7 +149,7 @@ def main():
     section("环境检查")
 
     if run(["git", "rev-parse", "--is-inside-work-tree"]).returncode != 0:
-        fail("请在 stock_trade_z 仓库目录内运行此脚本")
+        fail("请在 stock_radar 仓库目录内运行此脚本")
         sys.exit(1)
     ok("Git 仓库")
 
