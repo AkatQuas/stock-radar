@@ -100,10 +100,6 @@ optional_secrets = {
 for name, value in optional_secrets.items():
     print(f"  {'✅' if value else '⚪'}  {name}  ({'已设置' if value else '可选，LLM 复盘用'})")
 
-section("本地 .env")
-env_path = ROOT / ".env"
-check(".env 存在", env_path.exists(), str(env_path) if env_path.exists() else "运行 setup.py 生成")
-
 section("TickFlow API（日线 K 线）")
 try:
     df = fetch_one_data("000066", "20240701", "20240710")
