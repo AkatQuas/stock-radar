@@ -1,3 +1,4 @@
+# Workflow triggers: schedule (weekdays 07:00 UTC+8) + manual dispatch
 name: Daily Stock Trade
 
 on:

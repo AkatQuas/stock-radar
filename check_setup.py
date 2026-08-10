@@ -102,7 +102,7 @@ for name, value in optional_secrets.items():
 
 section("TickFlow API（日线 K 线）")
 try:
-    df = fetch_one_data("000066", "20240701", "20240710")
+    df = fetch_one_data("000066", "20260701", "20260710")
     check("TickFlow K 线连接成功", df is not None and len(df) > 0)
 except Exception as e:
     check("TickFlow K 线连接", False, str(e))

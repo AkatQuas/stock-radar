@@ -1,4 +1,5 @@
-name: ✅ Check Setup
+# Manual dispatch only
+name: Check Setup
 
 on:
   workflow_dispatch:
