@@ -135,6 +135,8 @@ GitHub 上：**Actions → ✅ Check Setup → Run workflow**（需先在仓库 
 
 启用 `--llm-analyze` 后，选股复盘会调用 DeepSeek 对候选标的排序并生成 Markdown 点评。这类 LLM 调用很难只靠日志排查问题 — [Langfuse](https://langfuse.com) 提供了很好的可观测性：Web 控制台里能看到完整 trace、每轮 generation、token 用量和费用，方便对比模型表现、定位「只输出 reasoning 没有正文」等异常。
 
+Trace 层级：`analyze-picks` → `deepseek-complete` → `deepseek-round-N-{initial|reasoning|truncation}` → `deepseek-generation-N-*`。默认 `reasoning_effort=low`，减少 thinking token 占用。
+
 **完全可选**：
 
 - 同时设置 `LANGFUSE_PUBLIC_KEY` + `LANGFUSE_SECRET_KEY` → 自动上报（标签 `stock-radar`）

@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import atexit
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any, ParamSpec, TypeVar
 
 P = ParamSpec("P")
@@ -73,6 +74,31 @@ def set_trace_metadata(**metadata: Any) -> None:
     from langfuse import get_client
 
     get_client().update_current_span(metadata=metadata)
+
+
+def set_trace_output(value: Any) -> None:
+    if not is_enabled():
+        return
+    from langfuse import get_client
+
+    get_client().update_current_span(output=value)
+
+
+@contextmanager
+def llm_round_span(*, name: str, metadata: dict[str, Any] | None = None) -> Iterator[Any]:
+    """Nested span for one LLM completion round (no-op when tracing disabled)."""
+    if not is_enabled():
+        yield None
+        return
+
+    from langfuse import get_client
+
+    with get_client().start_as_current_observation(
+        name=name,
+        as_type="span",
+        metadata=metadata or {},
+    ) as span:
+        yield span
 
 
 def flush() -> None:
