@@ -1,9 +1,11 @@
 """DeepSeek API client (OpenAI-compatible chat completions)."""
 
 import os
+import time
 from collections.abc import Callable
 from typing import Any, Literal
 
+from openai import APIConnectionError, APIStatusError, APITimeoutError, RateLimitError
 from openai.types.chat import ChatCompletionMessage
 
 from stock_radar.llm.langfuse_tracing import (
@@ -21,6 +23,8 @@ API_KEY_ENV = "DEEPSEEK_API_KEY"
 DEFAULT_MODEL = "deepseek-v4-flash"
 DEFAULT_REASONING_EFFORT = "low"
 MAX_COMPLETION_ROUNDS = 5
+MAX_TRANSIENT_RETRIES = 2
+_RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 REASONING_CONTINUATION_PROMPT = (
     "请直接输出完整排序复盘 Markdown 正文，严格按先前要求的格式，不要重复思考过程。"
 )
@@ -43,6 +47,27 @@ def get_client():
     if not api_key:
         raise RuntimeError(f"{API_KEY_ENV} is not set")
     return openai_client(api_key=api_key, base_url=DEEPSEEK_BASE_URL)
+
+
+def _is_retryable(exc: Exception) -> bool:
+    if isinstance(exc, (APIConnectionError, APITimeoutError, RateLimitError)):
+        return True
+    return isinstance(exc, APIStatusError) and exc.status_code in _RETRYABLE_STATUS_CODES
+
+
+def _create_completion_with_retry(client: Any, **kwargs: Any) -> Any:
+    last_exc: Exception | None = None
+    for attempt in range(MAX_TRANSIENT_RETRIES + 1):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except Exception as exc:
+            if not _is_retryable(exc) or attempt == MAX_TRANSIENT_RETRIES:
+                raise
+            last_exc = exc
+            time.sleep(2**attempt)
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError("completion retry loop exited without result")
 
 
 def _reasoning_content(message: ChatCompletionMessage) -> str | None:
@@ -103,6 +128,7 @@ def _completion_kwargs(
     messages: list[dict[str, Any] | ChatCompletionMessage],
     max_tokens: int,
     reasoning_effort: str,
+    thinking: bool,
     generation_name: str,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -111,7 +137,7 @@ def _completion_kwargs(
         "messages": messages,
         "max_tokens": max_tokens,
         "reasoning_effort": reasoning_effort,
-        "extra_body": {"thinking": {"type": "enabled"}},
+        "extra_body": {"thinking": {"type": "enabled" if thinking else "disabled"}},
         "name": generation_name,
     }
     if metadata is not None:
@@ -194,7 +220,11 @@ def complete(
     model: str,
     max_tokens: int,
     reasoning_effort: str = DEFAULT_REASONING_EFFORT,
+    thinking: bool = True,
     is_complete: Callable[[str], bool] | None = None,
+    trace_metadata: dict[str, Any] | None = None,
+    reasoning_continuation: str | None = None,
+    truncation_continuation: str | None = None,
 ) -> str:
     """Call DeepSeek chat completions with multi-round continuation.
 
@@ -204,13 +234,20 @@ def complete(
     When output hits ``max_tokens`` (``finish_reason == "length"``) or ``is_complete``
     reports missing sections, we request a truncation continuation and concatenate.
     """
+    reasoning_prompt = reasoning_continuation or REASONING_CONTINUATION_PROMPT
+    truncation_prompt = truncation_continuation or TRUNCATION_CONTINUATION_PROMPT
+
     set_trace_input([{"role": "user", "content": prompt}])
-    set_trace_metadata(
-        model=model,
-        max_tokens=max_tokens,
-        reasoning_effort=reasoning_effort,
-        langfuse_tags=[APP_TAG],
-    )
+    span_metadata: dict[str, Any] = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "reasoning_effort": reasoning_effort,
+        "thinking": thinking,
+        "langfuse_tags": [APP_TAG],
+    }
+    if trace_metadata:
+        span_metadata.update(trace_metadata)
+    set_trace_metadata(**span_metadata)
 
     messages: list[dict[str, Any] | ChatCompletionMessage] = [{"role": "user", "content": prompt}]
     client = get_client()
@@ -232,15 +269,17 @@ def complete(
         span_name, generation_name = _round_observation_names(round_no, continuation_type)
 
         with llm_round_span(name=span_name, metadata=round_metadata) as round_span:
-            response = client.chat.completions.create(
+            response = _create_completion_with_retry(
+                client,
                 **_completion_kwargs(
                     model=model,
                     messages=messages,
                     max_tokens=max_tokens,
                     reasoning_effort=reasoning_effort,
+                    thinking=thinking,
                     generation_name=generation_name,
                     metadata=round_metadata,
-                )
+                ),
             )
             message = response.choices[0].message
             last_message = message
@@ -267,7 +306,7 @@ def complete(
 
             continuation_type = "truncation"
             messages.append(message)
-            messages.append({"role": "user", "content": TRUNCATION_CONTINUATION_PROMPT})
+            messages.append({"role": "user", "content": truncation_prompt})
             continue
 
         if not _should_continue_reasoning(message) or round_idx == MAX_COMPLETION_ROUNDS - 1:
@@ -275,7 +314,7 @@ def complete(
 
         continuation_type = "reasoning"
         messages.append(message)
-        messages.append({"role": "user", "content": REASONING_CONTINUATION_PROMPT})
+        messages.append({"role": "user", "content": reasoning_prompt})
 
     if last_message is None:
         raise RuntimeError("DeepSeek returned no choices")

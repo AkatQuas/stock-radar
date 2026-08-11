@@ -4,6 +4,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+from openai import RateLimitError
+
 from stock_radar.llm.llm import (
     MAX_COMPLETION_ROUNDS,
     REASONING_CONTINUATION_PROMPT,
@@ -128,6 +130,32 @@ class CompleteTests(unittest.TestCase):
 
         self.assertEqual(result, "partial##done")
         self.assertEqual(client.chat.completions.create.call_count, 2)
+
+    @patch("stock_radar.llm.llm.time.sleep")
+    @patch("stock_radar.llm.llm.get_client")
+    def test_retries_transient_api_errors(self, get_client, _sleep):
+        client = MagicMock()
+        get_client.return_value = client
+        client.chat.completions.create.side_effect = [
+            RateLimitError("rate limited", response=MagicMock(), body=None),
+            _response(_message(content="digest")),
+        ]
+
+        result = complete("prompt", model="deepseek-v4-flash", max_tokens=100)
+
+        self.assertEqual(result, "digest")
+        self.assertEqual(client.chat.completions.create.call_count, 2)
+
+    @patch("stock_radar.llm.llm.get_client")
+    def test_disables_thinking_when_requested(self, get_client):
+        client = MagicMock()
+        get_client.return_value = client
+        client.chat.completions.create.return_value = _response(_message(content="digest"))
+
+        complete("prompt", model="deepseek-v4-flash", max_tokens=100, thinking=False)
+
+        kwargs = client.chat.completions.create.call_args.kwargs
+        self.assertEqual(kwargs["extra_body"], {"thinking": {"type": "disabled"}})
 
 
 if __name__ == "__main__":

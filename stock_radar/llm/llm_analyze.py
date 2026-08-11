@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 
 from stock_radar.core.logger import get_logger
-from stock_radar.llm.langfuse_tracing import APP_TAG, observe, set_trace_metadata
+from stock_radar.llm.langfuse_tracing import observe
 from stock_radar.llm.llm import (
     DEFAULT_MODEL,
     DEFAULT_REASONING_EFFORT,
@@ -19,6 +19,12 @@ from stock_radar.llm.llm import (
 logger = get_logger("select")
 
 ANALYZE_MAX_TOKENS = 4096
+ANALYZE_SECTION_MARKERS = ("### 排序推荐",)
+
+
+def is_analyze_complete(md: str) -> bool:
+    """True when required analyze sections are present."""
+    return all(marker in md for marker in ANALYZE_SECTION_MARKERS)
 
 
 @observe(name="analyze-picks", capture_input=False)
@@ -37,14 +43,6 @@ def analyze_picks(
         return None
     if not records:
         return None
-
-    set_trace_metadata(
-        model=model,
-        track=track,
-        pick_count=len(records),
-        trade_date=str(trade_date.date()),
-        langfuse_tags=[APP_TAG],
-    )
 
     payload = {"trade_date": str(trade_date.date()), "track": track, "picks": records}
     picks_json = json.dumps(payload, ensure_ascii=False, indent=2)
@@ -75,6 +73,13 @@ def analyze_picks(
             model=model,
             max_tokens=max_tokens,
             reasoning_effort=reasoning_effort,
+            thinking=False,
+            is_complete=is_analyze_complete,
+            trace_metadata={
+                "track": track,
+                "pick_count": len(records),
+                "trade_date": str(trade_date.date()),
+            },
         ).strip()
     except Exception as e:
         logger.error("LLM 分析失败: %s", e)
