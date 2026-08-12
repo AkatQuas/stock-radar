@@ -1,0 +1,13 @@
+diff --git i/tickflow/client.py w/tickflow/client.py
+index 0529450..da9aa73 100644
+--- i/tickflow/client.py
++++ w/tickflow/client.py
+@@ -278,7 +278,7 @@ class TickFlow:
+                 "TICKFLOW_FREE_BASE_URL", "https://free-api.tickflow.org"
+             )
+
+-        _print_free_tier_notice()
++        # _print_free_tier_notice()
+
+         return cls(
+             api_key=None,  # Free tier doesn't require API key

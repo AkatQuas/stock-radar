@@ -50,7 +50,11 @@ default = true
 packages = ["stock_radar"]
 
 [dependency-groups]
-dev = ["ruff>=0.9", "pre-commit>=4.0"]
+dev = [
+    "ruff>=0.9",
+    "pre-commit>=4.0",
+    "patch-package-py>=0.2.1",
+]
 
 [tool.ruff]
 line-length = 100

@@ -20,7 +20,7 @@ jobs:
           enable-cache: true
 
       - name: Install dev dependencies
-        run: uv sync --group dev
+        run: bash scripts/sync.sh --group dev
 
       - name: Ruff lint
         run: uv run ruff check .

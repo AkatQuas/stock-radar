@@ -50,8 +50,8 @@
 
 ```bash
 cd stock-radar
-uv sync               # 创建 .venv、安装依赖并注册 CLI
-uv sync --group dev   # 含 ruff（lint + format）与 pre-commit
+bash scripts/sync.sh          # uv sync + 应用 patches/（等同 npm patch-package）
+bash scripts/sync.sh --group dev   # 含 ruff、pre-commit、patch-package-py
 ```
 
 **代码检查与格式化（Ruff）：**
@@ -66,7 +66,7 @@ uv run ruff format --check .     # CI 用：仅检查格式是否一致
 **Git pre-commit（提交前自动检查）：**
 
 ```bash
-uv sync --group dev
+bash scripts/sync.sh --group dev
 uv run pre-commit install          # 安装 hooks 到 .git/hooks（每台机器执行一次）
 uv run pre-commit run --all-files  # 手动全量跑一遍
 ```

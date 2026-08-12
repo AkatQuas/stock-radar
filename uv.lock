@@ -857,6 +857,15 @@ wheels = [
 ]
 
 [[package]]
+name = "patch-package-py"
+version = "0.2.1"
+source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple/" }
+sdist = { url = "https://pypi.tuna.tsinghua.edu.cn/packages/ce/6c/1a15f563b8506b5fe4edbcd70836d4c481704518aeb5bc5c79602656083e/patch_package_py-0.2.1.tar.gz", hash = "sha256:a5addd8c4c897bf7795496f3148d4470f84a4abbebdcab06cea2213a4303de67", size = 6576, upload-time = "2026-05-31T14:30:53.394Z" }
+wheels = [
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/87/6c/8cd23d431ee1a3ccbfa2ac9ced565c9df1b91fe51119b1b008e6588131ed/patch_package_py-0.2.1-py3-none-any.whl", hash = "sha256:135054c5eb112377c67adcbd7e4502007c24a94d2cd98b5a6fa119fe60ae693e", size = 7733, upload-time = "2026-05-31T14:30:52.216Z" },
+]
+
+[[package]]
 name = "platformdirs"
 version = "4.10.0"
 source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple/" }
@@ -1395,6 +1404,7 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "patch-package-py" },
     { name = "pre-commit" },
     { name = "ruff" },
 ]
@@ -1423,6 +1433,7 @@ provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "patch-package-py", specifier = ">=0.2.1" },
     { name = "pre-commit", specifier = ">=4.0" },
     { name = "ruff", specifier = ">=0.9" },
 ]

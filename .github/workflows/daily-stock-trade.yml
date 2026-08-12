@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies with uv sync
         run: |
-          uv sync
+          bash scripts/sync.sh
 
       - name: Check if today is a trading day (TickFlow)
         run: uv run stock-is-trade-date
