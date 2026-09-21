@@ -1,6 +1,6 @@
 """选股策略包：Z 战法、量化因子、Sequoia-X 策略及池选/风控。"""
 
-from .base import SelectorBase
+from .base import SelectorBase, VectorSelector, is_vector_selector
 from .bbi_kdj import BBIKDJSelector
 from .bbi_short_long import BBIShortLongSelector
 from .big_bullish_volume import BigBullishVolumeSelector
@@ -55,4 +55,6 @@ __all__ = [
     "SupportLevelSelector",
     "TurtleTradeSelector",
     "UptrendLimitDownSelector",
+    "VectorSelector",
+    "is_vector_selector",
 ]

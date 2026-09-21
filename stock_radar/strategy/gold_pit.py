@@ -8,10 +8,10 @@ from stock_radar.core.compute import (
     compute_pit_and_trap,
     passes_day_constraints_today,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import RiskSelectorBase
 
 
-class GoldPitSelector:
+class GoldPitSelector(RiskSelectorBase):
     def __init__(
         self,
         gold_pit_threshold: float = -10.0,
@@ -23,6 +23,7 @@ class GoldPitSelector:
         self.cci_overbought_threshold = cci_overbought_threshold
         self.cci_extreme_overbought_threshold = cci_extreme_overbought_threshold
         self.cci_oversold_threshold = cci_oversold_threshold
+        self.min_history = 1
 
     # ---------- 单支股票过滤 ---------- #
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
@@ -44,14 +45,3 @@ class GoldPitSelector:
         # CCI Buy Signal (oversold, optional reference)
         hist["cci14_oversold_buy"] = np.where(hist["CCI14"] < self.cci_oversold_threshold, 1, 0)
         return bool(hist["cci14_oversold_buy"].iloc[-1] == 1 and hist["gold_pit"].iloc[-1] == -120)
-
-    # ---------- 多股票批量 ---------- #
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

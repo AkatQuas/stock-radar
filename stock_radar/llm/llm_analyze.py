@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-import json
+import re
+from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
@@ -15,16 +16,89 @@ from stock_radar.llm.llm import (
     api_key_configured,
     complete,
 )
+from stock_radar.llm.llm_context import build_analyze_payload_json
 
 logger = get_logger("select")
 
 ANALYZE_MAX_TOKENS = 4096
-ANALYZE_SECTION_MARKERS = ("### 排序推荐",)
+ANALYZE_SECTION_MARKERS = (
+    "### 排序推荐",
+    "### 建议剔除",
+)
+SECTION_RANKED = "### 排序推荐"
+SECTION_VETO = "### 建议剔除"
+
+
+@dataclass
+class ParsedAnalyzeSections:
+    ranked_lines: list[str] = field(default_factory=list)
+    veto_lines: list[str] = field(default_factory=list)
+
+    @property
+    def has_ranked(self) -> bool:
+        return bool(self.ranked_lines)
+
+    @property
+    def has_veto(self) -> bool:
+        return bool(self.veto_lines)
 
 
 def is_analyze_complete(md: str) -> bool:
-    """True when required analyze sections are present."""
-    return all(marker in md for marker in ANALYZE_SECTION_MARKERS)
+    """True when the ranked section is present (veto section is optional)."""
+    return SECTION_RANKED in md
+
+
+def parse_analyze_sections(md: str) -> ParsedAnalyzeSections:
+    """Parse LLM analyze markdown into ranked and veto bullet lists."""
+    result = ParsedAnalyzeSections()
+    current: str | None = None
+
+    for line in md.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("### "):
+            current = stripped
+            continue
+        if stripped.startswith("- "):
+            if current == SECTION_RANKED:
+                result.ranked_lines.append(stripped)
+            elif current == SECTION_VETO:
+                result.veto_lines.append(stripped)
+
+    return result
+
+
+def extract_verdict(line: str) -> str | None:
+    """Extract [keep|flag|veto] from a bullet line, if present."""
+    match = re.search(r"\[(keep|flag|veto)\]", line, re.IGNORECASE)
+    return match.group(1).lower() if match else None
+
+
+def build_analyze_prompt(
+    records: list[dict[str, Any]], trade_date: pd.Timestamp, *, track: str
+) -> str:
+    """Build the analyze prompt from structured pick records."""
+    picks_json = build_analyze_payload_json(records, trade_date, track=track)
+    return f"""你是 A 股短线选股研究员，为人工复盘提供第二意见（非投资建议）。
+
+以下是由规则选股器产生的候选列表（track={track}）。请根据结构化数据：
+1. 按短期质量重新排序（rank 从 1 开始）
+2. 为每只给出 verdict: keep（推荐）| flag（谨慎）| veto（建议剔除）
+3. 用中文简述理由（1-2 句）和主要风险
+
+仅根据提供的结构化数据判断，不要编造新闻或财报。
+直接输出可粘贴进 Lark 文档的 Markdown 正文（不要代码块、不要 JSON、不要前言后记），格式模版为： `[code name](xueqiu url) [verdict]: reason` 。若干示例：
+
+### 排序推荐
+- [600000 浦发银行](https://xueqiu.com/S/SH600000) [keep] 连板强势，封板早 — 风险: 高位换手
+- [000001 平安银行](https://xueqiu.com/S/SZ000001) [flag] 量能尚可但贴近涨停 — 风险: 分歧加大
+
+### 建议剔除
+- [000002 万科A](https://xueqiu.com/S/SZ000002) [veto] 换手过高且趋势走弱
+
+候选数据：
+{picks_json}"""
 
 
 @observe(name="analyze-picks", capture_input=False)
@@ -44,28 +118,7 @@ def analyze_picks(
     if not records:
         return None
 
-    payload = {"trade_date": str(trade_date.date()), "track": track, "picks": records}
-    picks_json = json.dumps(payload, ensure_ascii=False, indent=2)
-
-    prompt = f"""你是 A 股短线选股研究员，为人工复盘提供第二意见（非投资建议）。
-
-以下是由规则选股器产生的候选列表（track={track}）。请根据结构化数据：
-1. 按短期质量重新排序（rank 从 1 开始）
-2. 为每只给出 verdict: keep（推荐）| flag（谨慎）| veto（建议剔除）
-3. 用中文简述理由（1-2 句）和主要风险
-
-仅根据提供的结构化数据判断，不要编造新闻或财报。
-直接输出可粘贴进 Lark 文档的 Markdown 正文（不要代码块、不要 JSON、不要前言后记），格式模版为： `[code name](xueqiu url) [verdict]: reason` 。若干示例：
-
-### 排序推荐
-- [600000 浦发银行](https://xueqiu.com/S/SH600000) [keep] 连板强势，封板早 — 风险: 高位换手
-- [000001 平安银行](https://xueqiu.com/S/SZ000001) [flag] 量能尚可但贴近涨停 — 风险: 分歧加大
-
-### 建议剔除
-- [000002 万科A](https://xueqiu.com/S/SZ000002) [veto] 换手过高且趋势走弱
-
-候选数据：
-{picks_json}"""
+    prompt = build_analyze_prompt(records, trade_date, track=track)
 
     try:
         return complete(

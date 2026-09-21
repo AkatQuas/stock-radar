@@ -124,3 +124,18 @@ def picks_to_json(records: list[dict[str, Any]], trade_date: pd.Timestamp) -> st
         "picks": records,
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def build_analyze_payload_json(
+    records: list[dict[str, Any]],
+    trade_date: pd.Timestamp,
+    *,
+    track: str,
+) -> str:
+    """JSON payload for LLM analyze — single source for prompt construction."""
+    payload = {
+        "trade_date": str(trade_date.date()),
+        "track": track,
+        "picks": records,
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)

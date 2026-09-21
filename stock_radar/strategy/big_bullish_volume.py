@@ -6,10 +6,10 @@ import pandas as pd
 from stock_radar.core.compute import (
     compute_zx_lines,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class BigBullishVolumeSelector:
+class BigBullishVolumeSelector(SelectorBase):
     def __init__(
         self,
         *,
@@ -44,6 +44,13 @@ class BigBullishVolumeSelector:
         self.min_history = (
             int(min_history) if min_history is not None else (self.vol_lookback_n + 2)
         )
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        need_len = max(self.min_history, self.vol_lookback_n + 2)
+        hist = df[df["date"] <= date].tail(need_len)
+        if len(hist) < need_len:
+            return None
+        return hist
 
     @staticmethod
     def _to_float(x) -> float:
@@ -135,16 +142,3 @@ class BigBullishVolumeSelector:
         if not np.isfinite(zxdq_T):
             return False
         return cT < zxdq_T * self.close_lt_zxdq_mult
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        need_len = max(self.min_history, self.vol_lookback_n + 2)
-        for code, df in data.items():
-            if df is None or df.empty:
-                continue
-            hist = df[df["date"] <= date].tail(need_len)
-            if len(hist) < need_len:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

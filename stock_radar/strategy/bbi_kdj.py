@@ -11,10 +11,10 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class BBIKDJSelector:
+class BBIKDJSelector(SelectorBase):
     """
     自适应 *BBI(导数)* + *KDJ* 选股器
         • BBI: 允许 bbi_q_threshold 比例的回撤
@@ -38,6 +38,16 @@ class BBIKDJSelector:
         self.price_range_pct = price_range_pct
         self.bbi_q_threshold = bbi_q_threshold  # ← 原 q_threshold
         self.j_q_threshold = j_q_threshold  # ← 新增
+        self.min_history = self.bbi_min_window
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        hist = df[df["date"] <= date]
+        if hist.empty:
+            return None
+        hist = hist.tail(self.max_window + 20)
+        if len(hist) < self.min_history:
+            return None
+        return hist
 
     # ---------- 单支股票过滤 ---------- #
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
@@ -96,16 +106,3 @@ class BBIKDJSelector:
         return zx_condition_at_positions(
             hist, require_close_gt_long=True, require_short_gt_long=True, pos=None
         )
-
-    # ---------- 多股票批量 ---------- #
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            # 额外预留 20 根 K 线缓冲
-            hist = hist.tail(self.max_window + 20)
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

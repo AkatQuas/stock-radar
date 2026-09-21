@@ -11,10 +11,10 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class BBIShortLongSelector:
+class BBIShortLongSelector(SelectorBase):
     """
     BBI 上升 + 短/长期 RSV 条件 + DIF > 0 选股器
     """
@@ -40,6 +40,14 @@ class BBIShortLongSelector:
         self.bbi_q_threshold = bbi_q_threshold
         self.upper_rsv_threshold = upper_rsv_threshold
         self.lower_rsv_threshold = lower_rsv_threshold
+        self.min_history = max(self.n_short, self.n_long) + self.bbi_min_window
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        need_len = max(self.n_short, self.n_long) + self.bbi_min_window + self.m
+        hist = df[df["date"] <= date].tail(max(need_len, self.max_window))
+        if hist.empty:
+            return None
+        return hist
 
     # ---------- 单支股票过滤 ---------- #
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
@@ -100,21 +108,3 @@ class BBIShortLongSelector:
         return zx_condition_at_positions(
             hist, require_close_gt_long=True, require_short_gt_long=True, pos=None
         )
-
-    # ---------- 多股票批量 ---------- #
-    def select(
-        self,
-        date: pd.Timestamp,
-        data: dict[str, pd.DataFrame],
-    ) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            # 预留足够长度：RSV 计算窗口 + BBI 检测窗口 + m
-            need_len = max(self.n_short, self.n_long) + self.bbi_min_window + self.m
-            hist = hist.tail(max(need_len, self.max_window))
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

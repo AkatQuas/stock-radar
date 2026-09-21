@@ -51,13 +51,21 @@ def load_registry(
     config_filename: str,
     list_key: str,
     module_path: str,
+    *,
+    merge_keys: tuple[str, ...] = (),
 ) -> dict[str, Any]:
     cfg_path = get_config_path(config_filename)
     entries = load_json_list(cfg_path, list_key)
     result: dict[str, Any] = {}
     for cfg in entries:
         try:
-            alias, instance = instantiate_from_module(module_path, cfg)
+            entry = dict(cfg)
+            params = dict(entry.get("params") or {})
+            for key in merge_keys:
+                if key in entry and key not in params:
+                    params[key] = entry[key]
+            entry["params"] = params
+            alias, instance = instantiate_from_module(module_path, entry)
             if alias in result:
                 logger.warning("selector 别名重复，后者覆盖前者: %s", alias)
             result[alias] = instance

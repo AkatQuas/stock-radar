@@ -10,10 +10,10 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import RiskSelectorBase
 
 
-class SupportLevelSelector:
+class SupportLevelSelector(RiskSelectorBase):
     def __init__(
         self,
         # ATR相关参数
@@ -35,6 +35,7 @@ class SupportLevelSelector:
         self.rsi_high = rsi_high
         self.vol_ratio = vol_ratio
         self.use_zx_filter = use_zx_filter
+        self.min_history = 1
 
     def _compute_strategy_indicators(self, hist: pd.DataFrame) -> pd.DataFrame:
         """
@@ -147,13 +148,3 @@ class SupportLevelSelector:
             # 指标计算异常时，判定为不符合条件
             print(f"过滤逻辑执行异常：{e}")
             return False
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

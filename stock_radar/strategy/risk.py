@@ -9,10 +9,10 @@ from stock_radar.core.compute import (
     compute_rsi,
     last_valid_ma_cross_up,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import RiskSelectorBase, SelectorBase
 
 
-class ATRVolatilitySelector:
+class ATRVolatilitySelector(RiskSelectorBase):
     """Flag stocks whose ATR/price exceeds a relative threshold."""
 
     def __init__(
@@ -32,19 +32,8 @@ class ATRVolatilitySelector:
             return False
         return (atr_latest / price) >= self.rel_threshold
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            tasks.append((code, hist))
 
-        # Use multiprocessing; fallback inside helper
-        return parallel_select_helper(self, tasks)
-
-
-class RSIExtremesSelector:
+class RSIExtremesSelector(RiskSelectorBase):
     """Flag extreme RSI values (oversold or overbought) as risk signals."""
 
     def __init__(
@@ -66,18 +55,8 @@ class RSIExtremesSelector:
         rsi_latest = float(rsi.iloc[-1])
         return (rsi_latest <= self.low_thresh) or (rsi_latest >= self.high_thresh)
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            tasks.append((code, hist))
 
-        return parallel_select_helper(self, tasks)
-
-
-class MADeclineSelector:
+class MADeclineSelector(RiskSelectorBase):
     """Flag stocks where short MA is below long MA and the long MA slope is negative."""
 
     def __init__(
@@ -107,18 +86,8 @@ class MADeclineSelector:
         # short MA below long MA and long MA slope negative
         return (ma_s.iloc[-1] < ma_l.iloc[-1]) and self._slope_negative(ma_l, self.slope_days)
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            tasks.append((code, hist))
 
-        return parallel_select_helper(self, tasks)
-
-
-class VolumeSelloffSelector:
+class VolumeSelloffSelector(RiskSelectorBase):
     """Flag heavy sell-off: big volume spike while price drops."""
 
     def __init__(
@@ -161,17 +130,8 @@ class VolumeSelloffSelector:
             price_drop = (c_prev - c_today) / c_prev
         return (v_today >= self.vol_multiple * avg_vol) and (price_drop >= self.drop_pct)
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            tasks.append((code, hist))
-        return parallel_select_helper(self, tasks)
 
-
-class DrawdownFromPeakSelector:
+class DrawdownFromPeakSelector(SelectorBase):
     """Flag large drawdown from recent N-day high (trend damage / stop-loss zone)."""
 
     def __init__(
@@ -180,6 +140,9 @@ class DrawdownFromPeakSelector:
         self.lookback_n = lookback_n
         self.drawdown_pct = drawdown_pct
         self.min_history = min_history
+
+    def _history_buffer(self) -> int:
+        return 5
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist is None or len(hist) < self.min_history:
@@ -191,22 +154,16 @@ class DrawdownFromPeakSelector:
             return False
         return (peak - close) / peak >= self.drawdown_pct
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date].tail(self.min_history + 5)
-            if len(hist) < self.min_history:
-                continue
-            tasks.append((code, hist))
-        return parallel_select_helper(self, tasks)
 
-
-class GapDownSelector:
+class GapDownSelector(SelectorBase):
     """Overnight gap down: open significantly below prior close."""
 
     def __init__(self, gap_pct: float = 0.03, min_history: int = 5) -> None:
         self.gap_pct = gap_pct
         self.min_history = min_history
+
+    def _history_buffer(self) -> int:
+        return 2
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist is None or len(hist) < 2:
@@ -219,17 +176,8 @@ class GapDownSelector:
         gap = (o_today - c_prev) / c_prev
         return gap <= -self.gap_pct
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date].tail(self.min_history + 2)
-            if len(hist) < 2:
-                continue
-            tasks.append((code, hist))
-        return parallel_select_helper(self, tasks)
 
-
-class MACDBearishSelector:
+class MACDBearishSelector(SelectorBase):
     """MACD death cross or DIF below DEA with negative momentum."""
 
     def __init__(
@@ -239,6 +187,9 @@ class MACDBearishSelector:
     ) -> None:
         self.lookback_n = lookback_n
         self.min_history = min_history
+
+    def _history_buffer(self) -> int:
+        return 5
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist is None or len(hist) < self.min_history:
@@ -252,17 +203,8 @@ class MACDBearishSelector:
             macd["MACD"].iloc[-2]
         )
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date].tail(self.min_history + 5)
-            if len(hist) < self.min_history:
-                continue
-            tasks.append((code, hist))
-        return parallel_select_helper(self, tasks)
 
-
-class TopTrapSelector:
+class TopTrapSelector(RiskSelectorBase):
     """CCI overbought combined with top-trap sell signal."""
 
     def __init__(
@@ -286,12 +228,3 @@ class TopTrapSelector:
             or hist["CCI84"].iloc[-1] > self.cci_overbought_threshold
         )
         return bool(cci_overbought and hist["top_trap_sell"].iloc[-1] == 120)
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if len(hist) < self.min_history:
-                continue
-            tasks.append((code, hist))
-        return parallel_select_helper(self, tasks)

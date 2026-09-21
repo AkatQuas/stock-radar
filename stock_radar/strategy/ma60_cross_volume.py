@@ -9,10 +9,10 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class MA60CrossVolumeWaveSelector:
+class MA60CrossVolumeWaveSelector(SelectorBase):
     """
     条件：
     1) 当日 J 绝对低或相对低（J < j_threshold 或 J ≤ 近 max_window 根 J 的 j_q_threshold 分位）
@@ -44,6 +44,14 @@ class MA60CrossVolumeWaveSelector:
         self.j_q_threshold = j_q_threshold
         self.ma60_slope_days = ma60_slope_days
         self.max_window = max_window
+        self.min_history = 60 + self.lookback_n + self.ma60_slope_days
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        need_len = max(60 + self.lookback_n + self.ma60_slope_days, self.max_window + 20)
+        hist = df[df["date"] <= date].tail(need_len)
+        if len(hist) < need_len:
+            return None
+        return hist
 
     @staticmethod
     def _ma_slope_positive(series: pd.Series, days: int) -> bool:
@@ -135,15 +143,3 @@ class MA60CrossVolumeWaveSelector:
         return zx_condition_at_positions(
             hist, require_close_gt_long=True, require_short_gt_long=True, pos=None
         )
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        # 给足 60 日均线与量能比较的历史长度
-        need_len = max(60 + self.lookback_n + self.ma60_slope_days, self.max_window + 20)
-        for code, df in data.items():
-            hist = df[df["date"] <= date].tail(need_len)
-            if len(hist) < need_len:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

@@ -8,10 +8,10 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class PeakKDJSelector:
+class PeakKDJSelector(SelectorBase):
     """
     Peaks + KDJ 选股器
     """
@@ -29,6 +29,16 @@ class PeakKDJSelector:
         self.fluc_threshold = fluc_threshold  # 当日↔peak_(t-n) 波动率上限
         self.gap_threshold = gap_threshold  # oc_prev 必须高于区间最低收盘价的比例
         self.j_q_threshold = j_q_threshold
+        self.min_history = self.max_window
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        hist = df[df["date"] <= date]
+        if hist.empty:
+            return None
+        hist = hist.tail(self.max_window + 20)
+        if len(hist) < self.min_history:
+            return None
+        return hist
 
     # ---------- 单支股票过滤 ---------- #
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
@@ -109,19 +119,3 @@ class PeakKDJSelector:
         return zx_condition_at_positions(
             hist, require_close_gt_long=True, require_short_gt_long=True, pos=None
         )
-
-    # ---------- 多股票批量 ---------- #
-    def select(
-        self,
-        date: pd.Timestamp,
-        data: dict[str, pd.DataFrame],
-    ) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            hist = df[df["date"] <= date]
-            if hist.empty:
-                continue
-            hist = hist.tail(self.max_window + 20)  # 额外缓冲
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

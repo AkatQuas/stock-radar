@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 # Weights aligned with the former chart-scoring rubric (trend/position/volume/abnormal)
 W_TREND = 0.20
@@ -47,7 +47,7 @@ def _ma_slope(series: pd.Series, days: int = 5) -> float:
     return float((s.iloc[-1] - s.iloc[-days - 1]) / base)
 
 
-class ChartScoreSelector:
+class ChartScoreSelector(SelectorBase):
     """Score a stock chart on four dimensions (1–5) from daily OHLCV."""
 
     def __init__(
@@ -62,19 +62,18 @@ class ChartScoreSelector:
         self.lookback = int(lookback)
         self.swing_lookback = int(swing_lookback)
         self.pass_threshold = float(pass_threshold)
+        self.min_history = 1
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        tail = max(self.min_bars, self.lookback) + 5
+        hist = df[df["date"] <= date].tail(tail)
+        if hist.empty:
+            return None
+        return hist
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         result = self.score("_", hist)
         return result is not None and result.total_score >= self.pass_threshold
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tail = max(self.min_bars, self.lookback) + 5
-        tasks = [
-            (code, df[df["date"] <= date].tail(tail))
-            for code, df in data.items()
-            if not df[df["date"] <= date].empty
-        ]
-        return parallel_select_helper(self, tasks)
 
     def score(self, code: str, hist: pd.DataFrame) -> ChartScoreResult | None:
         df = self._prepare(hist)

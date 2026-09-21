@@ -7,6 +7,7 @@ from datetime import time
 import pandas as pd
 
 from stock_radar.market.fetch_trend import _parse_yes_flag
+from stock_radar.strategy.base import PoolSelectorBase
 
 
 def _parse_hms(value) -> time | None:
@@ -24,27 +25,20 @@ def _parse_hms(value) -> time | None:
         return None
 
 
-def _pool_symbols(pool_df: pd.DataFrame) -> list[str]:
-    if pool_df is None or pool_df.empty or "symbol" not in pool_df.columns:
-        return []
-    return pool_df["symbol"].astype(str).str.zfill(6).tolist()
-
-
-class EarlySealSelector:
+class EarlySealSelector(PoolSelectorBase):
     """涨停池：早盘封板、无炸板。"""
 
     def __init__(self, pool: str = "ztgc", max_fbt: str = "10:00:00", max_zbc: int = 0) -> None:
-        self.pool = pool
+        super().__init__(pool=pool)
         self.max_fbt = _parse_hms(max_fbt) or time(10, 0)
         self.max_zbc = max_zbc
 
-    def select(
+    def _select_from_pool(
         self,
         date: pd.Timestamp,
         data: dict[str, pd.DataFrame],
-        pools: dict[str, pd.DataFrame],
+        pool_df: pd.DataFrame,
     ) -> list[str]:
-        pool_df = pools.get(self.pool, pd.DataFrame())
         picks: list[str] = []
         for _, row in pool_df.iterrows():
             sym = str(row["symbol"]).zfill(6)
@@ -59,21 +53,20 @@ class EarlySealSelector:
         return picks
 
 
-class ContinuationBoardSelector:
+class ContinuationBoardSelector(PoolSelectorBase):
     """涨停池：连板延续。"""
 
     def __init__(self, pool: str = "ztgc", min_lbc: int = 2, max_zbc: int = 1) -> None:
-        self.pool = pool
+        super().__init__(pool=pool)
         self.min_lbc = min_lbc
         self.max_zbc = max_zbc
 
-    def select(
+    def _select_from_pool(
         self,
         date: pd.Timestamp,
         data: dict[str, pd.DataFrame],
-        pools: dict[str, pd.DataFrame],
+        pool_df: pd.DataFrame,
     ) -> list[str]:
-        pool_df = pools.get(self.pool, pd.DataFrame())
         picks: list[str] = []
         for _, row in pool_df.iterrows():
             sym = str(row["symbol"]).zfill(6)
@@ -86,7 +79,7 @@ class ContinuationBoardSelector:
         return picks
 
 
-class FirstBoardLeaderSelector:
+class FirstBoardLeaderSelector(PoolSelectorBase):
     """涨停池：首板龙头。"""
 
     def __init__(
@@ -96,18 +89,17 @@ class FirstBoardLeaderSelector:
         hs_min: float = 3.0,
         hs_max: float = 25.0,
     ) -> None:
-        self.pool = pool
+        super().__init__(pool=pool)
         self.max_fbt = _parse_hms(max_fbt) or time(10, 30)
         self.hs_min = hs_min
         self.hs_max = hs_max
 
-    def select(
+    def _select_from_pool(
         self,
         date: pd.Timestamp,
         data: dict[str, pd.DataFrame],
-        pools: dict[str, pd.DataFrame],
+        pool_df: pd.DataFrame,
     ) -> list[str]:
-        pool_df = pools.get(self.pool, pd.DataFrame())
         picks: list[str] = []
         for _, row in pool_df.iterrows():
             sym = str(row["symbol"]).zfill(6)
@@ -125,21 +117,20 @@ class FirstBoardLeaderSelector:
         return picks
 
 
-class NewHighMomentumSelector:
+class NewHighMomentumSelector(PoolSelectorBase):
     """强势股池：新高 + 涨速 + 量比。"""
 
     def __init__(self, pool: str = "qsgc", min_zs: float = 1.0, min_lb: float = 1.5) -> None:
-        self.pool = pool
+        super().__init__(pool=pool)
         self.min_zs = min_zs
         self.min_lb = min_lb
 
-    def select(
+    def _select_from_pool(
         self,
         date: pd.Timestamp,
         data: dict[str, pd.DataFrame],
-        pools: dict[str, pd.DataFrame],
+        pool_df: pd.DataFrame,
     ) -> list[str]:
-        pool_df = pools.get(self.pool, pd.DataFrame())
         picks: list[str] = []
         for _, row in pool_df.iterrows():
             sym = str(row["symbol"]).zfill(6)
@@ -153,23 +144,22 @@ class NewHighMomentumSelector:
         return picks
 
 
-class NearLimitMomentumSelector:
+class NearLimitMomentumSelector(PoolSelectorBase):
     """强势股池：贴近涨停价且涨幅可观。"""
 
     def __init__(
         self, pool: str = "qsgc", max_dist_to_limit: float = 0.02, min_zf: float = 5.0
     ) -> None:
-        self.pool = pool
+        super().__init__(pool=pool)
         self.max_dist_to_limit = max_dist_to_limit
         self.min_zf = min_zf
 
-    def select(
+    def _select_from_pool(
         self,
         date: pd.Timestamp,
         data: dict[str, pd.DataFrame],
-        pools: dict[str, pd.DataFrame],
+        pool_df: pd.DataFrame,
     ) -> list[str]:
-        pool_df = pools.get(self.pool, pd.DataFrame())
         picks: list[str] = []
         for _, row in pool_df.iterrows():
             sym = str(row["symbol"]).zfill(6)
@@ -186,7 +176,7 @@ class NearLimitMomentumSelector:
         return picks
 
 
-class VolumeBreakoutSelector:
+class VolumeBreakoutSelector(PoolSelectorBase):
     """强势股池：高换手 + K线放量。"""
 
     def __init__(
@@ -196,18 +186,17 @@ class VolumeBreakoutSelector:
         vol_lookback: int = 5,
         vol_multiple: float = 1.5,
     ) -> None:
-        self.pool = pool
+        super().__init__(pool=pool)
         self.hs_min = hs_min
         self.vol_lookback = vol_lookback
         self.vol_multiple = vol_multiple
 
-    def select(
+    def _select_from_pool(
         self,
         date: pd.Timestamp,
         data: dict[str, pd.DataFrame],
-        pools: dict[str, pd.DataFrame],
+        pool_df: pd.DataFrame,
     ) -> list[str]:
-        pool_df = pools.get(self.pool, pd.DataFrame())
         picks: list[str] = []
         for _, row in pool_df.iterrows():
             sym = str(row["symbol"]).zfill(6)

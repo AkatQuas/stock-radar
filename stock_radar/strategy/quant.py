@@ -19,10 +19,10 @@ from stock_radar.core.compute import (
     last_valid_ma_cross_up,
     passes_day_constraints_today,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class MomentumSelector:
+class MomentumSelector(SelectorBase):
     """
     Price momentum factor: ROC above threshold with trend filter (close > MA).
 
@@ -55,16 +55,8 @@ class MomentumSelector:
             ma.iloc[-1]
         )
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = [
-            (code, df[df["date"] <= date].tail(self.min_history + 5))
-            for code, df in data.items()
-            if not df[df["date"] <= date].empty
-        ]
-        return parallel_select_helper(self, tasks)
 
-
-class MACDGoldenCrossSelector:
+class MACDGoldenCrossSelector(SelectorBase):
     """MACD golden cross: DIF crosses above DEA recently, histogram turning up."""
 
     def __init__(
@@ -76,6 +68,9 @@ class MACDGoldenCrossSelector:
         self.lookback_n = lookback_n
         self.require_dif_positive = require_dif_positive
         self.min_history = min_history
+
+    def _history_buffer(self) -> int:
+        return 10
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist is None or len(hist) < self.min_history:
@@ -93,16 +88,8 @@ class MACDGoldenCrossSelector:
         prev_macd = float(macd["MACD"].iloc[-2])
         return hist_macd > prev_macd
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = [
-            (code, df[df["date"] <= date].tail(self.min_history + 10))
-            for code, df in data.items()
-            if len(df[df["date"] <= date]) >= self.min_history
-        ]
-        return parallel_select_helper(self, tasks)
 
-
-class BollingerMeanReversionSelector:
+class BollingerMeanReversionSelector(SelectorBase):
     """
     Mean reversion: price at/below lower Bollinger band with RSI oversold.
 
@@ -137,16 +124,8 @@ class BollingerMeanReversionSelector:
             return False
         return close <= lower and rsi_v <= self.rsi_max
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = [
-            (code, df[df["date"] <= date].tail(self.min_history + 5))
-            for code, df in data.items()
-            if len(df[df["date"] <= date]) >= self.min_history
-        ]
-        return parallel_select_helper(self, tasks)
 
-
-class DonchianBreakoutSelector:
+class DonchianBreakoutSelector(SelectorBase):
     """
     Donchian channel breakout: close breaks N-day high with volume confirmation.
 
@@ -184,16 +163,8 @@ class DonchianBreakoutSelector:
             return False
         return vol_today >= self.vol_multiple * vol_avg
 
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = [
-            (code, df[df["date"] <= date].tail(self.min_history + 5))
-            for code, df in data.items()
-            if len(df[df["date"] <= date]) >= self.min_history
-        ]
-        return parallel_select_helper(self, tasks)
 
-
-class DualMAGoldenCrossSelector:
+class DualMAGoldenCrossSelector(SelectorBase):
     """Dual moving-average golden cross with price above both MAs."""
 
     def __init__(
@@ -208,6 +179,9 @@ class DualMAGoldenCrossSelector:
         self.lookback_n = lookback_n
         self.min_history = min_history
 
+    def _history_buffer(self) -> int:
+        return 10
+
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist is None or len(hist) < self.min_history:
             return False
@@ -221,11 +195,3 @@ class DualMAGoldenCrossSelector:
             return False
         c = float(close.iloc[-1])
         return c > float(ma_s.iloc[-1]) and c > float(ma_l.iloc[-1])
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = [
-            (code, df[df["date"] <= date].tail(self.min_history + 10))
-            for code, df in data.items()
-            if len(df[df["date"] <= date]) >= self.min_history
-        ]
-        return parallel_select_helper(self, tasks)

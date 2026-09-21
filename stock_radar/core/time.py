@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -27,6 +28,16 @@ def validate(df: pd.DataFrame) -> pd.DataFrame:
 
 def get_today_date() -> str:
     return market_now().strftime("%Y%m%d")
+
+
+def normalize_market_date(date: str) -> str:
+    """Normalize YYYY-MM-DD / YYYYMMDD / today to YYYYMMDD."""
+    if str(date).lower() == "today":
+        return get_today_date()
+    text = str(date).strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return text.replace("-", "")
+    return text
 
 
 def get_today_name() -> str:

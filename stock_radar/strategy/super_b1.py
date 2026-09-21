@@ -10,12 +10,12 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 from .bbi_kdj import BBIKDJSelector
 
 
-class SuperB1Selector:
+class SuperB1Selector(SelectorBase):
     """SuperB1 选股器
 
     过滤逻辑概览
@@ -69,6 +69,14 @@ class SuperB1Selector:
 
         # 为保证给 BBIKDJSelector 提供足够历史，预留额外缓冲
         self._extra_for_bbi = self.bbi_selector.max_window + 20
+        self.min_history = self.lookback_n + self._extra_for_bbi
+
+    def _slice_history(self, df: pd.DataFrame, date: pd.Timestamp) -> pd.DataFrame | None:
+        min_len = self.lookback_n + self._extra_for_bbi
+        hist = df[df["date"] <= date].tail(min_len)
+        if len(hist) < min_len:
+            return None
+        return hist
 
     # 单支股票过滤核心
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
@@ -125,15 +133,3 @@ class SuperB1Selector:
         return zx_condition_at_positions(
             hist, require_close_gt_long=False, require_short_gt_long=True, pos=None
         )
-
-    # 批量选股接口
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        min_len = self.lookback_n + self._extra_for_bbi
-        for code, df in data.items():
-            hist = df[df["date"] <= date].tail(min_len)
-            if len(hist) < min_len:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

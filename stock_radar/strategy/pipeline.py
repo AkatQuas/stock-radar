@@ -1099,19 +1099,4 @@ class BrickChartSelector(PipelineSelector):
         return float(self._pattern_filter.brick_growth_arr(hist)[-1])
 
 
-# ================
-# AnySelector Protocol（外部类型提示用）
-# ================
-
-
-class AnySelector(Protocol):
-    """外部代码面向接口编程时使用的 Protocol 类型。"""
-
-    def passes_df_on_date(self, df: pd.DataFrame, date: pd.Timestamp) -> bool: ...
-    def prepare_df(self, df: pd.DataFrame) -> pd.DataFrame: ...
-    def vec_picks_from_prepared(
-        self,
-        df: pd.DataFrame,
-        start: pd.Timestamp | None = None,
-        end: pd.Timestamp | None = None,
-    ) -> list[pd.Timestamp]: ...
+# VectorSelector Protocol lives in strategy.base (replaces legacy AnySelector).

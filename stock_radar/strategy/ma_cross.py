@@ -7,10 +7,10 @@ from stock_radar.core.compute import (
     last_valid_ma_cross_up,
     passes_day_constraints_today,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class MACrossSelector:
+class MACrossSelector(SelectorBase):
     """
     Simple MA crossover strategy with volume confirmation
 
@@ -35,6 +35,10 @@ class MACrossSelector:
         self.vol_multiple = vol_multiple
         self.j_threshold = j_threshold
         self.lookback_n = lookback_n
+        self.min_history = max(self.long_ma, self.lookback_n) + 5
+
+    def _history_buffer(self) -> int:
+        return 15
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist.empty or len(hist) < max(self.long_ma, self.lookback_n) + 5:
@@ -73,14 +77,3 @@ class MACrossSelector:
         # 4. KDJ oversold
         kdj = compute_kdj(hist)
         return not kdj["J"].iloc[-1] > self.j_threshold
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        need_len = max(self.long_ma, self.lookback_n) + 20
-        for code, df in data.items():
-            hist = df[df["date"] <= date].tail(need_len)
-            if len(hist) < need_len:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

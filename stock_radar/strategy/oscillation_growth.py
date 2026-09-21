@@ -6,10 +6,10 @@ from stock_radar.core.compute import (
     passes_day_constraints_today,
     zx_condition_at_positions,
 )
-from stock_radar.core.parallel_utils import parallel_select_helper
+from stock_radar.strategy.base import SelectorBase
 
 
-class OscillationGrowthSelector:
+class OscillationGrowthSelector(SelectorBase):
     """
     震荡后几根 K 线上攻选股器
 
@@ -51,6 +51,9 @@ class OscillationGrowthSelector:
         self.require_breakout = require_breakout
         self.use_zx_filter = use_zx_filter
         self.min_history = oscillation_days + growth_bars + 5
+
+    def _history_buffer(self) -> int:
+        return 10
 
     def _passes_filters(self, hist: pd.DataFrame) -> bool:
         if hist is None or hist.empty:
@@ -104,15 +107,3 @@ class OscillationGrowthSelector:
         return zx_condition_at_positions(
             hist, require_close_gt_long=True, require_short_gt_long=True, pos=None
         )
-
-    def select(self, date: pd.Timestamp, data: dict[str, pd.DataFrame]) -> list[str]:
-        tasks = []
-        for code, df in data.items():
-            if df is None or df.empty:
-                continue
-            hist = df[df["date"] <= date].tail(self.min_history + 10)
-            if len(hist) < self.min_history:
-                continue
-            tasks.append((code, hist))
-
-        return parallel_select_helper(self, tasks)

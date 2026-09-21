@@ -4,14 +4,12 @@ import argparse
 from pathlib import Path
 
 from stock_radar.core.logger import get_logger
-from stock_radar.llm.llm_analyze import analyze_picks
-from stock_radar.llm.llm_context import build_pick_records
 from stock_radar.market.data_utils import load_data_folder
 from stock_radar.market.load_stocklist import load_total_stocklist
 from stock_radar.market.trend_context import TrendContext, load_trend_context
-from stock_radar.notify.lark_notify import send_report_as_doc
 from stock_radar.notify.lark_report import build_pool_select_report_md
 from stock_radar.strategy.loader import load_pool_selectors
+from stock_radar.strategy.run_selection import SelectionOptions, run_selection
 
 logger = get_logger("select")
 
@@ -64,10 +62,6 @@ def main() -> None:
         return
 
     pools = trend_ctx.pools
-    selector_dict = load_pool_selectors()
-    stocklist = load_total_stocklist()
-    stock_by_sym = {s["symbol"]: s for s in stocklist}
-
     logger.info(
         "股池选股开始 | %s %s | qsgc=%d ztgc=%d\n",
         trade_date.date(),
@@ -76,54 +70,28 @@ def main() -> None:
         len(pools.get("ztgc", [])),
     )
 
-    all_results: list[dict] = []
-    for alias, selector in selector_dict.items():
-        picks = selector.select(trade_date, data, pools)
-        if not picks:
-            logger.info("===[%s] 无结果===\n", alias)
-            continue
-
-        logger.info("===[%s] 股池结果 (%d)===", alias, len(picks))
-        stocks = []
-        for sym in picks:
-            info = stock_by_sym.get(sym, {"symbol": sym, "name": sym, "xueqiu_url": ""})
-            stocks.append(
-                {
-                    "symbol": sym,
-                    "name": info.get("name", sym),
-                    "url": info.get("xueqiu_url", ""),
-                    "tags": _pool_tags(trend_ctx, sym),
-                }
-            )
-            logger.info("%s %s %s", sym, info.get("name", ""), _pool_tags(trend_ctx, sym))
-
-        all_results.append({"selector": alias, "count": len(picks), "stocks": stocks})
-
-    llm_section = None
-    if args.llm_analyze and all_results:
-        market_context = {
+    run_selection(
+        selectors=load_pool_selectors(),
+        data=data,
+        trade_date=trade_date,
+        stocklist=load_total_stocklist(),
+        pools=pools,
+        trend_ctx=trend_ctx,
+        tag_fn=lambda sym: _pool_tags(trend_ctx, sym),
+        market_context={
             "qsgc_count": len(pools.get("qsgc", [])),
             "ztgc_count": len(pools.get("ztgc", [])),
-        }
-        records = build_pick_records(
+        },
+        opts=SelectionOptions(
+            llm_analyze=args.llm_analyze,
+            llm_max=args.llm_max,
+            send_lark=args.send_lark,
             track="pool",
-            trade_date=trade_date,
-            results=all_results,
-            data=data,
-            trend_ctx=trend_ctx,
-            market_context=market_context,
-            max_stocks=args.llm_max,
-        )
-        llm_section = analyze_picks(records, trade_date, track="pool")
-
-    if args.send_lark:
-        title = f"{trade_date.date()}[{trade_date.day_name()}]股池选股"
-        markdown = build_pool_select_report_md(all_results, llm_section)
-        summary = f"强势股/涨停选股 — {trade_date.date()} {trade_date.day_name()}"
-        if send_report_as_doc(title=title, markdown=markdown, summary=summary):
-            logger.info("已发送股池选股报告文档链接到 Lark")
-        else:
-            logger.error("发送 Lark 失败")
+        ),
+        report_title=f"{trade_date.date()}[{trade_date.day_name()}]股池选股",
+        report_summary=f"强势股/涨停选股 — {trade_date.date()} {trade_date.day_name()}",
+        build_report_md=build_pool_select_report_md,
+    )
 
 
 if __name__ == "__main__":
