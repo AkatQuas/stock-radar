@@ -48,7 +48,7 @@ class CompleteTests(unittest.TestCase):
         get_client.return_value = client
         client.chat.completions.create.return_value = _response(_message(content="digest"))
 
-        complete("prompt", model="deepseek-v4-flash", max_tokens=100, reasoning_effort="low")
+        complete("prompt", model="deepseek-flash", max_tokens=100, reasoning_effort="low")
 
         kwargs = client.chat.completions.create.call_args.kwargs
         self.assertEqual(kwargs["reasoning_effort"], "low")
@@ -61,7 +61,7 @@ class CompleteTests(unittest.TestCase):
         get_client.return_value = client
         client.chat.completions.create.return_value = _response(_message(content="digest"))
 
-        result = complete("prompt", model="deepseek-v4-flash", max_tokens=100)
+        result = complete("prompt", model="deepseek-flash", max_tokens=100)
 
         self.assertEqual(result, "digest")
         client.chat.completions.create.assert_called_once()
@@ -75,7 +75,7 @@ class CompleteTests(unittest.TestCase):
             _response(_message(content="digest")),
         ]
 
-        result = complete("prompt", model="deepseek-v4-flash", max_tokens=100)
+        result = complete("prompt", model="deepseek-flash", max_tokens=100)
 
         self.assertEqual(result, "digest")
         self.assertEqual(client.chat.completions.create.call_count, 2)
@@ -92,7 +92,7 @@ class CompleteTests(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(RuntimeError, f"{MAX_COMPLETION_ROUNDS} round"):
-            complete("prompt", model="deepseek-v4-flash", max_tokens=100)
+            complete("prompt", model="deepseek-flash", max_tokens=100)
 
         self.assertEqual(client.chat.completions.create.call_count, MAX_COMPLETION_ROUNDS)
 
@@ -105,7 +105,7 @@ class CompleteTests(unittest.TestCase):
             _response(_message(content="part two"), finish_reason="stop"),
         ]
 
-        result = complete("prompt", model="deepseek-v4-flash", max_tokens=100)
+        result = complete("prompt", model="deepseek-flash", max_tokens=100)
 
         self.assertEqual(result, "part onepart two")
         self.assertEqual(client.chat.completions.create.call_count, 2)
@@ -123,7 +123,7 @@ class CompleteTests(unittest.TestCase):
 
         result = complete(
             "prompt",
-            model="deepseek-v4-flash",
+            model="deepseek-flash",
             max_tokens=100,
             is_complete=lambda md: md.endswith("##done"),
         )
@@ -141,7 +141,7 @@ class CompleteTests(unittest.TestCase):
             _response(_message(content="digest")),
         ]
 
-        result = complete("prompt", model="deepseek-v4-flash", max_tokens=100)
+        result = complete("prompt", model="deepseek-flash", max_tokens=100)
 
         self.assertEqual(result, "digest")
         self.assertEqual(client.chat.completions.create.call_count, 2)
@@ -152,7 +152,7 @@ class CompleteTests(unittest.TestCase):
         get_client.return_value = client
         client.chat.completions.create.return_value = _response(_message(content="digest"))
 
-        complete("prompt", model="deepseek-v4-flash", max_tokens=100, thinking=False)
+        complete("prompt", model="deepseek-flash", max_tokens=100, thinking=False)
 
         kwargs = client.chat.completions.create.call_args.kwargs
         self.assertEqual(kwargs["extra_body"], {"thinking": {"type": "disabled"}})

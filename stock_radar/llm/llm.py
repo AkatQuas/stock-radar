@@ -20,7 +20,7 @@ from stock_radar.llm.langfuse_tracing import (
 
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 API_KEY_ENV = "DEEPSEEK_API_KEY"
-DEFAULT_MODEL = "deepseek-v4-flash"
+DEFAULT_MODEL = "deepseek-flash"
 DEFAULT_REASONING_EFFORT = "low"
 MAX_COMPLETION_ROUNDS = 5
 MAX_TRANSIENT_RETRIES = 2
